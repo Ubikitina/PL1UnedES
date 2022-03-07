@@ -1,0 +1,339 @@
+package compiler.syntax;
+
+// Declaración de importaciones 
+//(No modificar las proporcionadas. Se pueden agregar mas)
+
+import java_cup.runtime.Symbol;
+import java.util.*;
+
+import es.uned.lsi.compiler.lexical.*;
+import es.uned.lsi.compiler.code.*;
+import es.uned.lsi.compiler.intermediate.*;
+import es.uned.lsi.compiler.semantic.*;
+import es.uned.lsi.compiler.semantic.symbol.*;
+import es.uned.lsi.compiler.semantic.type.*;
+import es.uned.lsi.compiler.syntax.*;
+
+import compiler.CompilerContext;
+import compiler.lexical.*;
+import compiler.syntax.nonTerminal.*;
+import compiler.semantic.symbol.*;
+import compiler.semantic.type.*;
+import compiler.intermediate.*;
+import compiler.code.*;
+
+// Declaración del código de usuario
+
+action code {:
+	
+	SyntaxErrorManager   syntaxErrorManager   = CompilerContext.getSyntaxErrorManager();
+	SemanticErrorManager semanticErrorManager = CompilerContext.getSemanticErrorManager ();
+	ScopeManagerIF       scopeManager         = CompilerContext.getScopeManager ();
+	FinalCodeFactoryIF   finalCodeFactory     = CompilerContext.getFinalCodeFactory ();
+
+:}	
+
+parser code {:
+	SyntaxErrorManager syntaxErrorManager = CompilerContext.getSyntaxErrorManager();
+	
+	public void syntax_error(Symbol symbol)
+	{ 
+	    Token token = (Token) symbol.value;
+	    syntaxErrorManager.syntaxError ("Error sintactico", token);	    
+	}
+		
+	public void unrecovered_syntax_error(java_cup.runtime.Symbol symbol)
+	{	
+	    Token token = (Token) symbol.value;
+	    syntaxErrorManager.syntaxFatalError ("Error fatal", token);
+	}
+:}
+
+// Declaración de terminales
+
+terminal Token RANGO;
+terminal Token ASIGNACIONVECTOR;
+terminal Token STARTIF;
+terminal Token NOLOGICO;
+terminal Token FRETURN;
+terminal Token COMIENZOPROGRAMA;
+terminal Token ENTERO;
+terminal Token FINBLOQUESENTENCIAS;
+terminal Token COMIENZOPROCEDIMIENTO;
+terminal Token COMIENZOBUCLEPARA;
+terminal Token BOOLEANO;
+terminal Token COMIENZOSI;
+terminal Token DECLVECTOR;
+terminal Token CIZQUIERDO;
+terminal Token DECLAREFUNCION;
+terminal Token CDERECHO;
+terminal Token IDEN;
+terminal Token IGUALDAD;
+terminal Token ALTERNATIVASI;
+terminal Token DECLVARIABLES;
+terminal Token STRING;
+terminal Token FALSO;
+terminal Token PARAMETROVALOR;
+terminal Token PIZQUIERDO;
+terminal Token PDERECHO;
+terminal Token CIERTO;
+terminal Token RANGOBUCLEPARA;
+terminal Token PRODUCTO;
+terminal Token SUMA;
+terminal Token COMIENZOSUBPROGRAMAS;
+terminal Token COMIENZODECLTIPOS;
+terminal Token DIDENTIFICADORES;
+terminal Token FINPROGRAMA;
+terminal Token BCONSTANTES;
+terminal Token ESCRIBIR;
+terminal Token NUM;
+terminal Token COMIENZO;
+terminal Token YLOGICA;
+terminal Token DELIMFUNC;
+terminal Token DSENTENCIAS;
+terminal Token MENORQUE;
+terminal Token ASIGNACION;
+
+
+
+
+// Declaración de no terminales
+
+
+non terminal  			program;
+non terminal Axiom		axiom;
+non terminal  			epsilon;
+non terminal Defconstantes defconstantes;
+non terminal Valorconstante valorconstante;
+non terminal Seccionconstantes seccionconstantes;
+non terminal Deftipos deftipos;
+non terminal Tipovector tipovector;
+non terminal Valorango valorango;
+non terminal Secciontipos secciontipos;
+non terminal Defvariables defvariables;
+non terminal Tipovariable tipovariable;
+non terminal Listavariables listavariables;
+non terminal Seccionvariables seccionvariables;
+non terminal Defsubprograma defsubprograma;
+non terminal Puntoycomaopcional puntoycomaopcional;
+
+non terminal Tiporetornofuncion tiporetornofuncion;
+non terminal Seccionsubprograma seccionsubprograma;
+non terminal Defprincipal defprincipal;
+non terminal Selectorvalororeferencia selectorvalororeferencia;
+
+
+non terminal Expresion expresion;
+non terminal Expresionlvl2 expresionlvl2;
+non terminal Expresionlvl3 expresionlvl3;
+non terminal Expresionlvl4 expresionlvl4;
+non terminal Expresionlvl5 expresionlvl5;
+
+
+
+
+non terminal Miembrovector miembrovector;
+non terminal Procedimiento procedimiento;
+non terminal Funcion funcion;
+non terminal Selectorpof selectorpof;
+
+non terminal Parametrofuncionoproc parametrofuncionoproc;
+non terminal Llamadafuncion llamadafuncion ; 
+
+non terminal Parteizquierdaasignacion parteizquierdaasignacion;  
+non terminal Sentenciadeasignacion sentenciadeasignacion;
+
+non terminal ParametroEscribir parametroEscribir ;
+non terminal SentenciaEscribir sentenciaEscribir ;
+
+non terminal Sentencia sentencia;
+non terminal SentenciaFuncion sentenciaFuncion;
+non terminal ListaSentencias listaSentencias;
+non terminal ListaSentenciasFuncion listaSentenciasFuncion;
+non terminal Sentenciaif sentenciaif;
+non terminal SentenciaifFuncion sentenciaifFuncion;
+non terminal Rellenoif rellenoif;
+non terminal RellenoifFuncion rellenoifFuncion;
+non terminal Sentenciafor sentenciafor;
+non terminal SentenciaforFuncion sentenciaforFuncion;
+non terminal SentenciaDevolver sentenciaDevolver;
+
+
+non terminal Parametroasignacion parametroasignacion;
+
+non terminal Sentenciallamadafuncion sentenciallamadafuncion;
+
+
+
+
+
+// Declaración de relaciones de precedencia
+precedence left		PIZQUIERDO, PDERECHO, YLOGICA, MENORQUE, IGUALDAD, CIZQUIERDO, CDERECHO, SUMA ;
+precedence left PRODUCTO;
+precedence right	NOLOGICO;
+
+// Declaración de reglas de producción
+
+start with program;
+
+program ::= 
+  {: 
+        syntaxErrorManager.syntaxInfo ("Starting parsing..."); 
+   :}
+  axiom:ax
+  {: 
+  		// No modificar esta estructura, aunque se pueden añadir más acciones semánticas
+  		
+  		//List intermediateCode = ax.getIntermediateCode ();
+  		//finalCodeFactory.create (intermediateCode);
+
+  		// En caso de no comentarse las dos sentencias anteriores puede generar una excepcion
+  		// en las llamadas a cupTest si el compilador no está completo. Esto es debido a que 
+  		// aún no se tendrá implementada la generación de código intermedio ni final.
+  		// Para la entrega final deberán descomentarse y usarse.
+  		
+  		syntaxErrorManager.syntaxInfo ("Parsing process ended.");
+   :};
+
+axiom ::= defprincipal;
+
+epsilon ::=;
+
+//Definición de constantes
+defconstantes ::=   IDEN ASIGNACION valorconstante DSENTENCIAS defconstantes | epsilon; 
+valorconstante ::=   FALSO | CIERTO | NUM ;
+seccionconstantes ::= BCONSTANTES defconstantes | epsilon;
+
+ //Definición de tipos
+deftipos ::=IDEN ASIGNACION DECLVECTOR CIZQUIERDO valorango RANGO valorango CDERECHO ASIGNACIONVECTOR tipovector  DSENTENCIAS deftipos | epsilon;
+tipovector ::=BOOLEANO | ENTERO ;
+valorango ::= NUM | IDEN | miembrovector;
+secciontipos ::= COMIENZODECLTIPOS deftipos | epsilon; 
+
+// Definición de variables
+tipovariable ::= BOOLEANO | ENTERO | IDEN ;
+selectorvalororeferencia ::=  PARAMETROVALOR IDEN |expresion ;
+defvariables ::= listavariables DELIMFUNC tipovariable puntoycomaopcional defvariables | epsilon; 
+listavariables ::= selectorvalororeferencia DIDENTIFICADORES listavariables {:System.out.println("\n\n1\n\n");:}| selectorvalororeferencia {:System.out.println("\n\n2\n\n");:}| epsilon ;
+seccionvariables ::= DECLVARIABLES defvariables | epsilon  ;
+puntoycomaopcional ::= DSENTENCIAS | epsilon;
+
+//reglas de subprogramas
+tiporetornofuncion ::= IDEN | tipovector ;
+procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id {:
+	// Creamos el ambito con el nombre del procedimiento
+	String idLexema = id.getLexema();
+	scopeManager.openScope(idLexema);
+	ScopeIF scope = scopeManager.getCurrentScope();
+
+	// Comprobaciones para ver si el ambito se ha creado correctamente
+	semanticErrorManager.semanticDebug("El nombre del nuevo ambito es: " + scope.getName());
+	semanticErrorManager.semanticDebug("El nivel del nuevo ambito es: " + scope.getLevel());
+	
+	// Obtencion de la tabla de tipos y simbolos
+	SymbolTableIF symbolTable = scope.getSymbolTable();
+	TypeTableIF typeTable = scope.getTypeTable();
+	
+:} PIZQUIERDO defvariables PDERECHO DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentencia listaSentencias   FINBLOQUESENTENCIAS DSENTENCIAS {:
+	// Cerramos el ambito actual (current scope)
+	scopeManager.closeScope();
+	semanticErrorManager.semanticDebug("Se ha cerrado el ambito actual.");
+:};
+funcion ::= DECLAREFUNCION IDEN:id {:
+	// Creamos el ambito con el nombre de la funcion
+	String idLexema = id.getLexema();
+	scopeManager.openScope(idLexema);
+	ScopeIF scope = scopeManager.getCurrentScope();
+	
+	// Comprobaciones para ver si el ambito se ha creado correctamente
+	semanticErrorManager.semanticDebug("El nombre del nuevo ambito es: " + scope.getName());
+	semanticErrorManager.semanticDebug("El nivel del nuevo ambito es: " + scope.getLevel());
+	
+	// Obtencion de la tabla de tipos y simbolos
+	SymbolTableIF symbolTable = scope.getSymbolTable();
+	TypeTableIF typeTable = scope.getTypeTable();
+	
+:} PIZQUIERDO defvariables PDERECHO DELIMFUNC tiporetornofuncion DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentenciaFuncion listaSentenciasFuncion FINBLOQUESENTENCIAS DSENTENCIAS {:
+	// Cerramos el ambito actual (current scope)
+	scopeManager.closeScope();
+	semanticErrorManager.semanticDebug("Se ha cerrado el ambito actual.");
+:} ;
+selectorpof ::= procedimiento | funcion ;
+defsubprograma ::=selectorpof  defsubprograma | epsilon ;
+seccionsubprograma ::=COMIENZOSUBPROGRAMAS  defsubprograma  | epsilon ;
+
+// Definición de programa principal
+defprincipal ::= COMIENZOPROGRAMA IDEN:id {:
+
+	// Creamos el ambito global con el nombre del programa principal
+	String idLexema = id.getLexema();
+	scopeManager.openScope(idLexema);
+	ScopeIF scope = scopeManager.getCurrentScope();
+	// Comprobaciones para ver si el ambito se ha creado correctamente
+	semanticErrorManager.semanticDebug("El nombre del nuevo ambito es: " + scope.getName());
+	semanticErrorManager.semanticDebug("El nivel del nuevo ambito es: " + scope.getLevel()); // El nivel esperado es 0
+	
+	// Obtencion de la tabla de tipos y simbolos
+	SymbolTableIF symbolTable = scope.getSymbolTable();
+	TypeTableIF typeTable = scope.getTypeTable();
+	
+	// Introducimos los tipos entero y booleano que describe el enunciado
+	TypeSimple tsEntero = new TypeSimple(scope, "ENTERO");
+	typeTable.addType("ENTERO",tsEntero);
+	TypeSimple tsBooleano = new TypeSimple(scope, "BOOLEANO");
+	typeTable.addType("BOOLEANO",tsBooleano);
+	
+:} DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO listaSentencias FINBLOQUESENTENCIAS FINPROGRAMA {:
+	// Cerramos el ambito actual (current scope)
+	scopeManager.closeScope();
+	semanticErrorManager.semanticDebug("Se ha cerrado el ambito actual.");
+:};
+
+// Expresiones
+expresion ::=  expresion MENORQUE  expresion |  expresion IGUALDAD  expresion | IDEN | llamadafuncion | CIERTO | FALSO | miembrovector | NUM | expresionlvl2;
+expresionlvl2 ::=  expresion SUMA expresion | expresionlvl3 ;
+expresionlvl3 ::=  expresion YLOGICA expresion |  expresion PRODUCTO expresion | expresionlvl4;
+expresionlvl4 ::= NOLOGICO  expresion | expresionlvl5 ;
+expresionlvl5 ::= PIZQUIERDO expresion PDERECHO | CIZQUIERDO expresion CDERECHO  ;
+
+
+// Acceso a vectores
+miembrovector::= IDEN CIZQUIERDO valorango CDERECHO;
+ 
+// Sentencias de asignacion
+parteizquierdaasignacion ::= IDEN |miembrovector  ;
+sentenciadeasignacion ::= parteizquierdaasignacion ASIGNACION parametroasignacion DSENTENCIAS; 
+parametroasignacion ::= expresion ;
+
+// Llamada a función
+parametrofuncionoproc ::=     listavariables ;
+llamadafuncion ::= IDEN PIZQUIERDO parametrofuncionoproc PDERECHO;  
+sentenciallamadafuncion ::= llamadafuncion DSENTENCIAS;
+
+
+// Sentencias
+sentencia ::= sentenciadeasignacion | sentenciaif | sentenciafor | sentenciaEscribir | sentenciallamadafuncion ;
+sentenciaFuncion ::= sentenciadeasignacion | sentenciaifFuncion | sentenciaforFuncion | sentenciaEscribir | sentenciallamadafuncion | sentenciaDevolver;
+listaSentencias ::= sentencia  listaSentencias | epsilon;
+listaSentenciasFuncion ::= sentenciaFuncion listaSentenciasFuncion | epsilon;
+
+// if
+sentenciaif ::= COMIENZOSI expresion  STARTIF DELIMFUNC listaSentencias rellenoif  FINBLOQUESENTENCIAS COMIENZOSI DSENTENCIAS ;
+sentenciaifFuncion ::= COMIENZOSI expresion  STARTIF DELIMFUNC listaSentenciasFuncion rellenoifFuncion  FINBLOQUESENTENCIAS COMIENZOSI DSENTENCIAS ;
+rellenoifFuncion ::=  ALTERNATIVASI DELIMFUNC  listaSentenciasFuncion | epsilon ;
+rellenoif ::=  ALTERNATIVASI DELIMFUNC  listaSentencias | epsilon ;
+
+// for 
+sentenciafor ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO expresion DELIMFUNC listaSentencias FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
+sentenciaforFuncion ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO expresion DELIMFUNC listaSentenciasFuncion FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
+
+
+// escribir. 
+parametroEscribir ::= STRING | expresion | epsilon ;
+sentenciaEscribir ::= ESCRIBIR PIZQUIERDO parametroEscribir PDERECHO DSENTENCIAS;
+
+// devolver
+sentenciaDevolver ::= FRETURN expresion DSENTENCIAS;
+
+
+
