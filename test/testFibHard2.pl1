@@ -1,0 +1,73 @@
+# Generador de secuencia de Fibonacci: N(0)= N(-1) + N(-2) 
+# Autor: Oscar José Pellicer Valero 
+programa fib:
+	# Cantidad de números de Fibonacci a generar 
+	constantes
+		MAX= 20;
+	tipos
+		tvector = vector [0..MAX] de entero; 
+	
+	variables
+		datos : tvector;
+		i : entero;
+	subprogramas
+
+	# Implementación de la suma
+	funcion sum(a, b: entero): entero:
+		comienzo
+			devolver a+b;
+		fin;
+		
+	#funcion para restar numResta unidades a num. El resultado será cuenta
+	funcion restaNums(numResta, cuenta, num : entero): entero:
+			comienzo
+				si (cuenta + numResta == num) entonces: 		#si cuenta + numResta = num --->  cuenta = num - numResta
+					devolver cuenta;
+				sino :
+					devolver restaNums(numResta,cuenta+1, num);
+				fin si;
+			
+			fin;
+	
+	
+    # Método para iniciar el generador 
+		procedimiento fibonacci(var datos : tvector):
+		# Generador de números de Fibonacci recursivo 
+		variables
+			i: entero;
+		subprogramas
+			funcion fibGen(n: entero) : entero:
+			comienzo
+
+				si (n < 0) entonces: ##si n<= 0 devuelve 0. se separa en 2 casos
+						devolver 0;
+				sino:
+					si (n == 0) entonces: #igual
+						devolver 0;
+					fin si;
+				fin si;
+				
+				si n==1 entonces:
+				    devolver 1;
+				fin si;
+				#devolver sum( fibGen(restaNums(1,0,n)) , fibGen(restaNums(2,0,n)) );		#descomenta esta línea si quieres añadir tiempo de procesamiento
+				devolver ( fibGen(restaNums(1,0,n)) + fibGen(restaNums(2,0,n)) ); 			#equivale a---> fibGen(n-1) + fibGen(n-2)
+				
+			fin;
+			comienzo
+			escribir("SECUENCIA FIBONACCI");
+		    para i en 0 .. MAX:
+  
+		    	escribir(fibGen(datos[i]));
+			fin para;
+			
+
+		fin;
+    
+	comienzo
+		para i en 0 .. MAX:
+	        datos[i] = i; #asignamos valores a datos. De 0 a MAX
+	    fin para;
+
+	    fibonacci(datos);
+	fin.

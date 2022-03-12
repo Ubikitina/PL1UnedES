@@ -1,0 +1,153 @@
+#
+# *************************************************************
+# * PUTEADOR - COMPROBADOR DE NIVEL 1 (NIVEL FACIL) PARA PL2  *
+# *                   BY NOMED - GRUPO B                      *
+# *************************************************************
+# * COMO USAR ESTE PUTEADOR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      *
+# * 1)SI LO EJECUTAS CONFORME ESTA,TU COMPILADOR NO DEBERIA   *
+# *   GENERARTE NINGUN ERROR						     	     *
+# * 2)PERO SI DESCOMENTAS UNO A UNO LOS COMENTARIOS EN ESE    *
+# * PUNTO DEBE DE DETECTAR EL ERROR DESCRITO A LA DERECHA     *
+# *************************************************************                                  
+# * USALO, MEJORALO Y COMPARTELO                              *
+# * 				PERO SOBRE TODO APRUEBA ESTA MEGDA           *
+# *************************************************************
+# * SI TE SIRVIO PARA MEJORAR TU PED DIMELO Y TE PASO         *
+#			EL TEST DE NIVEL 2 (NIVEL MEDIO)           		  *
+# *************************************************************
+# * 	         			RESPETO Y HACKING                    *
+# *************************************************************
+#*)
+#
+#NIVEL 1 COMPROBRACION DE :
+#	CONST - VAR - TYPE - EXPRESIONES LOGICAS - EXPRESIONES ARITMETICAS
+#	- SENTENCIAS Y RETURN EN EL PROGRAMA PRINCIPAL Y EN BLOQUES IF Y FOR - BLOQUES IF-THEN-ELSE
+#	CON Y SIN RETURN - BUCLES FOR *)
+
+
+	programa uno:
+		
+	  constantes
+	  		A = 10;
+	  		B = 20;
+			#B = 1;
+	  		C = falso;
+	  		#C = cierto;						#error identificador duplicado
+	  		D = cierto;
+	  		#E = ;							#error en el formato al declarar constante
+	  tipos
+	  		tipo1 = vector [1..A] de entero;
+	  		
+	  		#tipo2							#errores en el formato al declarar tipo
+	  		#tipo2 ;
+	  		#tipo2 =;
+	  		#tipo1 = vector [1..E] de entero;	#error en el rango del tipo, no existe final
+	  		#tipo2 = vector [1..C] de booleano; #error el tipo del indece debe ser entero
+	  		tipo3 = vector [1..20] de booleano;
+	  		#tipo3 = vector[1..20] de booleano;    #eror el identificador ya ha sido utilizado
+	  		
+	  variables
+	  		var1:booleano;
+	  		var2:tipo1;
+	  		#var3:hola;						#error el tipo hola no existe
+	  		#var3,var3:entero;				#error identificador duplicado
+	  		#;							#error formato de declaracion de varaibles
+	  		#var0:							#error formato
+	  		#var0;							#error formato
+	  		var4,var5,var6:booleano;
+	  		var7,var8:entero;
+	  
+	  	subprogramas
+	  		funcion fun1():entero:
+	  			
+	  			comienzo
+	  				#si (2==2) entonces: 
+	  				#	devolver 1;
+	  				#sino:
+	  				#	devolver 2;									
+	  				#fin si;									#Si descomentamos este bloque
+	  													#y hay sentencias detras 
+	  													#error sentencias inalcanzables,culpa return
+	  				devolver 1;
+	  				#devolver 1; #Codigo inalcanzable
+	  				#devolver 1;
+	  			fin;
+	  		funcion fun2(a : entero):booleano:
+		  			
+		  		comienzo
+		  			si (2==2) entonces: 
+		  				devolver cierto;					#no debe dar error, pero no está balanceado
+		  			fin si;									#falta return en sino o tras el si
+		  			
+		  		fin;
+		  			
+	  		funcion fun3():booleano:
+	  			comienzo
+	  				#si (2==2) entonces: 
+	  				#	devolver 1;
+	  				#sino:
+	  				#	devolver cierto;		
+	  				#fin si;							#tipos no coindicen en el retorno
+	  				devolver cierto;
+	  			fin;
+	  comienzo
+	  	escribir("hola mundo");
+
+	  	escribir();
+	  	escribir(var7);
+	  	escribir(var7+var8);
+		#escribir(var7+);					#error expresion mal formada
+		#escribir(va);						#error variable no existe
+		#escribir(var1);						#error debe ser entero
+		var1 = cierto;
+		var1 = falso;
+		#var7 = var1;							#los tipos deben coincidir
+		var7 = 5;
+		var7 = var8;
+		var7 = A;
+		#var7 = D;							#los tipos deben coincidir
+		
+	#***********OJO VAMOS A PERMITIR BLOQUES VACIOS EN FOR Y EN IF-THEN Y EN ELSE******
+		
+		#si (var7 == var8);					#if mal formado
+		#si ;								#falta condicion en if
+		#si (var1==1) entonces:
+		#fin si;							#los tipos no son iguales
+		#si (2 + 3) entonces: fin si;				#la expresion no es boolean
+		si (2==2) entonces: fin si;
+		si (var7<2) entonces: fin si;
+		si (var7==var8) entonces: fin si;
+
+		
+		si (2==2) entonces:
+			var1=cierto;
+		sino:
+			var8=8;
+		fin si;
+		
+		si (2==2) entonces: var1=cierto; sino: var1=cierto; fin si;
+		
+		para var7 en 1 .. 10 :
+			var1=falso; 
+		fin para;
+		
+		#para var7 en falso .. 10 :
+		#	var1 = falso; 
+		#fin para;									#el valor del indice debe ser entero
+
+		#para var1000 en 1 .. 10 :				#la variable del indice debe haber sido declarada en VAR
+		#	var1=falso; 
+		#fin para;			
+
+		#para var1 en falso .. 10 : 
+		#	var1= falso;  
+		#fin para;												#la variable del indice debe ser una variable entera
+		
+		#para var7 en 1 .. 10 :
+		#	var7 = var7 + 1;
+		#	devolver 1; 
+		#fin para;											#(sintácticamente en este caso, test no relevante)no se permite return en el bucle for
+		
+		para var7 en 1 .. 10 : fin para;				#bucle sin sentencias
+
+	  fin.

@@ -1,0 +1,59 @@
+programa multifallo:
+
+	constantes #Asignacion de constantes
+		MAX = 6; 
+		MIN = cierto;
+	tipos
+		tvector = vector [3.. 15] de entero;
+
+	variables 
+		var1 : entero;
+		var2, var3 : entero;
+		var0 : booleano;
+		a,b : entero;
+	subprogramas
+	funcion funcion1 (VAR a:booleano) : booleano:
+		comienzo
+			a = no cierto;
+			devolver a;
+		fin;
+
+	procedimiento pruebaSentencias():
+		variables
+			x : tvector; # Definicion de variables mediante tipo vector 
+		comienzo
+			var1 = 1 ; # Sentencia asignacion 
+			var1 = 1 + 1 ; # Uso de expresion en asignacion 
+			var1 = var1 * var1; # Uso de variables en expresion 
+			x[MAX] = var1 ; # Asignacion en array
+			var0 = 1 < 3 ; # Operacion condicional
+			var0 =  ( no ( no (falso) ) ) ; # NOT y expresion entre parentesis
+			b = ( 2 * ( a + 3 ) ) ; # Uso de parentesis anidados
+			var0 = ( 3 < 5 ) y cierto;
+		fin;
+
+		procedimiento pruebaParametros (VAR i,j:entero;VAR z: booleano):
+		comienzo
+			para b en 1 .. 12:
+				i = 1 + 1;
+			escribir ("PROBANDO CADENAS");
+				escribir();
+				escribir ( 1 + 1 );
+				escribir();
+				escribir( i );
+				escribir();
+			fin para;
+			si 2 < 5 entonces:
+				escribir ("PROBANDO CADENAS 2");
+				escribir();
+			sino:
+				escribir ("PROBANDO CADENAS 3");
+				escribir();
+			fin si;
+		fin;
+	
+	comienzo
+		pruebaSentencias();
+		var0 = funcion1(var0);
+		pruebaParametros(var1,var2,var0);
+	fin.

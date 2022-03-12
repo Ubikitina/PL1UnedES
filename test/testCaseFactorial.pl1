@@ -1,0 +1,56 @@
+# programa factorial
+programa doce:
+variables
+	uno,objetivo : entero;
+subprogramas
+
+	funcion factorial(var k : entero) : entero :
+		variables
+			contador, multiplicando, multiplicador, intermedio : entero;
+		subprogramas
+			funcion producto (var x : entero): entero :
+				variables
+					intermedio:entero;
+				
+				comienzo
+					si (no (x == multiplicador)) entonces: #multiplicador es referencia no local definida en factorial-> SI x != de multiplicador
+
+						intermedio = x + 1;
+						#escribir(intermedio);
+						devolver producto(intermedio)+multiplicando;	#multiplicando es referencia no local definida en factorial
+					sino:
+						devolver 0;
+					fin si;
+				fin;
+	
+		comienzo
+			si (no (k == objetivo) ) entonces: 	#objetivo referencia global si k != objetivo
+
+				intermedio = k + 1;	#intermedio referencia var local y k es referencia parametro
+				multiplicador = k;
+				multiplicando = factorial(intermedio);
+				contador = 0;
+				devolver producto(contador);
+			sino:
+				devolver objetivo;
+			fin si;
+		fin;
+
+comienzo
+	uno = 1;
+	escribir("Factoriales de 1 a 7 :");
+	objetivo=1;
+	escribir(factorial(uno));
+	objetivo=2;
+	escribir(factorial(uno));
+	objetivo=3;
+	escribir(factorial(uno));
+	objetivo=4;
+	escribir(factorial(uno));
+	objetivo=5;
+	escribir(factorial(uno));
+	objetivo=6;
+	escribir(factorial(uno));
+	objetivo=7;
+	escribir(factorial(uno));
+fin.

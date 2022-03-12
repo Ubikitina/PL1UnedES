@@ -1,0 +1,58 @@
+#(*
+# *************************************************************
+# * PUTEADOR - COMPROBADOR DE NIVEL 4 (NIVEL DIOS) PARA PL2  *
+# *                   BY NOMED - GRUPO B                      *
+# *************************************************************
+# * COMO USAR ESTE PUTEADOR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      *
+# * 1)SI LO EJECUTAS CONFORME ESTA,TU COMPILADOR NO DEBERIA   *
+# *   GENERARTE NINGUN ERROR						     	     *
+# * 2)PERO SI DESCOMENTAS UNO A UNO LOS COMENTARIOS EN ESE    *
+# * PUNTO DEBE DE DETECTAR EL ERROR DESCRITO A LA DERECHA     *
+# *************************************************************                                  
+# * USALO, MEJORALO Y COMPARTELO                              *
+# * 				PERO SOBRE TODO APRUEBA ESTA MEGDA           *
+# *************************************************************
+# * SI TE SIRVIO PARA MEJORAR TU PED DIMELO                   *
+# *			 SI PASAS ESTE TEST TIENES APROBADO ESTO         *
+# *************************************************************
+# * 	         			RESPETO Y HACKING                    *
+# *************************************************************
+#*)
+#
+#(* comprobacion recursividad *)
+
+
+
+programa cuatro:
+
+	subprogramas
+
+	funcion resta(cuenta, num : entero): entero:
+		comienzo
+			si (cuenta + 1 == num) entonces:
+				devolver cuenta;
+			sino :
+				devolver resta(cuenta+1, num);
+			fin si;
+		
+		fin;
+	
+	funcion factorial(numero: entero) : entero:
+		comienzo
+  			si (numero == 0) entonces:
+  				devolver 1;
+  			sino: 
+  				
+  				devolver  numero * factorial(resta(0,numero));
+  			fin si;
+  		fin;
+   
+  comienzo
+  
+    escribir("Probando recursividad - El factorial de 7 es:");
+    
+  escribir (factorial(7)); #(* debe imprimir 120*)
+    
+  escribir("FIN");
+    
+  fin.
