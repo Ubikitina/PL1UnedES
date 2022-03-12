@@ -200,8 +200,43 @@ axiom ::= defprincipal;
 epsilon ::=;
 
 //Definición de constantes
-defconstantes ::=   IDEN ASIGNACION valorconstante DSENTENCIAS defconstantes | epsilon; 
-valorconstante ::=   FALSO | CIERTO | NUM ;
+defconstantes ::=   IDEN:id ASIGNACION valorconstante:valor DSENTENCIAS {:
+	// Recuperamos el ambito y obtenemos la tabla de simbolos
+	ScopeIF scope = scopeManager.getCurrentScope();
+	SymbolTableIF tablaSimbolos = scope.getSymbolTable();
+
+	// Comprobamos si la tabla de simbolos contiene el simbolo.
+	if(tablaSimbolos.containsSymbol(id.getLexema())){
+		semanticErrorManager.semanticFatalError("Constante " + id.getLexema() + " en linea " + id.getLine() + " declarada anteriormente, error.");
+	} else {
+		semanticErrorManager.semanticDebug("Constante " + id.getLexema() + " en linea " + id.getLine() + " no declarada.");
+
+		// Introducimos la constante en la tabla de simbolos
+		if(valor.esNumero()){ // si es numero lo aniadimos como numero
+			TypeIF t_entero = scopeManager.searchType("ENTERO");
+			SymbolConstant simboloConstante = new SymbolConstant(scope, id.getLexema(), valor.getValor_num(), t_entero);
+			tablaSimbolos.addSymbol(simboloConstante);
+			semanticErrorManager.semanticDebug("Constante " + id.getLexema() + " con valor " + valor.getValor_num() + "  declarada.");
+		}else{ // si no, es booleano, y lo aniadimos como booleano
+			TypeIF t_booleano = scopeManager.searchType("BOOLEANO");
+			SymbolConstant simboloConstante = new SymbolConstant(scope, id.getLexema(), valor.getValor_bool(), t_booleano);
+			tablaSimbolos.addSymbol(simboloConstante);
+			semanticErrorManager.semanticDebug("Constante " + id.getLexema() + " con valor " + valor.getValor_bool() + "  declarada.");
+		}
+
+	}
+
+
+:} defconstantes | epsilon; 
+
+valorconstante ::=   FALSO {:
+	RESULT = new Valorconstante(false);
+:} | CIERTO {:
+	RESULT = new Valorconstante(true);
+:} | NUM:valor_num {:
+	RESULT = new Valorconstante(Integer.parseInt(valor_num.getLexema()));
+:} ;
+
 seccionconstantes ::= BCONSTANTES defconstantes | epsilon;
 
  //Definición de tipos
@@ -214,7 +249,7 @@ secciontipos ::= COMIENZODECLTIPOS deftipos | epsilon;
 tipovariable ::= BOOLEANO | ENTERO | IDEN ;
 selectorvalororeferencia ::=  PARAMETROVALOR IDEN |expresion ;
 defvariables ::= listavariables DELIMFUNC tipovariable puntoycomaopcional defvariables | epsilon; 
-listavariables ::= selectorvalororeferencia DIDENTIFICADORES listavariables {:System.out.println("\n\n1\n\n");:}| selectorvalororeferencia {:System.out.println("\n\n2\n\n");:}| epsilon ;
+listavariables ::= selectorvalororeferencia DIDENTIFICADORES listavariables {:/*System.out.println("\n\n1\n\n");*/:}| selectorvalororeferencia {:/*System.out.println("\n\n2\n\n");*/:}| epsilon ;
 seccionvariables ::= DECLVARIABLES defvariables | epsilon  ;
 puntoycomaopcional ::= DSENTENCIAS | epsilon;
 
