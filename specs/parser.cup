@@ -103,65 +103,65 @@ terminal Token ASIGNACION;
 non terminal  			program;
 non terminal Axiom		axiom;
 non terminal  			epsilon;
-non terminal Defconstantes defconstantes;
+non terminal defconstantes;
 non terminal Valorconstante valorconstante;
-non terminal Seccionconstantes seccionconstantes;
-non terminal Deftipos deftipos;
+non terminal seccionconstantes;
+non terminal deftipos;
 non terminal Tipovector tipovector;
 non terminal Valorango valorango;
-non terminal Secciontipos secciontipos;
+non terminal secciontipos;
 non terminal Defvariables defvariables;
 non terminal Tipovariable tipovariable;
 non terminal Listavariables listavariables;
-non terminal Seccionvariables seccionvariables;
-non terminal Defsubprograma defsubprograma;
-non terminal Puntoycomaopcional puntoycomaopcional;
+non terminal seccionvariables;
+non terminal defsubprograma;
+non terminal puntoycomaopcional;
 
-non terminal Tiporetornofuncion tiporetornofuncion;
-non terminal Seccionsubprograma seccionsubprograma;
-non terminal Defprincipal defprincipal;
+non terminal tiporetornofuncion;
+non terminal seccionsubprograma;
+non terminal defprincipal;
 non terminal Selectorvalororeferencia selectorvalororeferencia;
 
 
-non terminal Expresion expresion;
-non terminal Expresionlvl2 expresionlvl2;
-non terminal Expresionlvl3 expresionlvl3;
-non terminal Expresionlvl4 expresionlvl4;
-non terminal Expresionlvl5 expresionlvl5;
+non terminal expresion;
+non terminal expresionlvl2;
+non terminal expresionlvl3;
+non terminal expresionlvl4;
+non terminal expresionlvl5;
 
 
 
 
-non terminal Miembrovector miembrovector;
-non terminal Procedimiento procedimiento;
-non terminal Funcion funcion;
-non terminal Selectorpof selectorpof;
+non terminal miembrovector;
+non terminal procedimiento;
+non terminal funcion;
+non terminal selectorpof;
 
-non terminal Parametrofuncionoproc parametrofuncionoproc;
-non terminal Llamadafuncion llamadafuncion ; 
+non terminal parametrofuncionoproc;
+non terminal llamadafuncion ; 
 
-non terminal Parteizquierdaasignacion parteizquierdaasignacion;  
-non terminal Sentenciadeasignacion sentenciadeasignacion;
+non terminal parteizquierdaasignacion;  
+non terminal sentenciadeasignacion;
 
-non terminal ParametroEscribir parametroEscribir ;
-non terminal SentenciaEscribir sentenciaEscribir ;
+non terminal parametroEscribir ;
+non terminal sentenciaEscribir ;
 
-non terminal Sentencia sentencia;
-non terminal SentenciaFuncion sentenciaFuncion;
-non terminal ListaSentencias listaSentencias;
-non terminal ListaSentenciasFuncion listaSentenciasFuncion;
-non terminal Sentenciaif sentenciaif;
-non terminal SentenciaifFuncion sentenciaifFuncion;
-non terminal Rellenoif rellenoif;
-non terminal RellenoifFuncion rellenoifFuncion;
-non terminal Sentenciafor sentenciafor;
-non terminal SentenciaforFuncion sentenciaforFuncion;
-non terminal SentenciaDevolver sentenciaDevolver;
+non terminal sentencia;
+non terminal sentenciaFuncion;
+non terminal listaSentencias;
+non terminal listaSentenciasFuncion;
+non terminal sentenciaif;
+non terminal sentenciaifFuncion;
+non terminal rellenoif;
+non terminal rellenoifFuncion;
+non terminal sentenciafor;
+non terminal sentenciaforFuncion;
+non terminal sentenciaDevolver;
 
 
-non terminal Parametroasignacion parametroasignacion;
+non terminal parametroasignacion;
 
-non terminal Sentenciallamadafuncion sentenciallamadafuncion;
+non terminal sentenciallamadafuncion;
 
 
 
@@ -199,13 +199,17 @@ axiom ::= defprincipal;
 
 epsilon ::=;
 
+/*================================================*
+ *================CONSTANTES======================*
+ *================================================*/
+
 //Definición de constantes
 defconstantes ::=   IDEN:id ASIGNACION valorconstante:valor DSENTENCIAS {:
 	// Recuperamos el ambito y obtenemos la tabla de simbolos
 	ScopeIF scope = scopeManager.getCurrentScope();
 	SymbolTableIF tablaSimbolos = scope.getSymbolTable();
 
-	// Comprobamos si la tabla de simbolos contiene el simbolo.
+	// Comprobamos si la tabla de simbolos contiene el simbolo
 	if(tablaSimbolos.containsSymbol(id.getLexema())){
 		semanticErrorManager.semanticFatalError("Constante " + id.getLexema() + " en linea " + id.getLine() + " declarada anteriormente, error.");
 	} else {
@@ -239,22 +243,124 @@ valorconstante ::=   FALSO {:
 
 seccionconstantes ::= BCONSTANTES defconstantes | epsilon;
 
+
+/*================================================*
+ *==========DEFINICION DE TIPOS===================*
+ *================================================*/
+
  //Definición de tipos
-deftipos ::=IDEN ASIGNACION DECLVECTOR CIZQUIERDO valorango RANGO valorango CDERECHO ASIGNACIONVECTOR tipovector  DSENTENCIAS deftipos | epsilon;
-tipovector ::=BOOLEANO | ENTERO ;
-valorango ::= NUM | IDEN | miembrovector;
+deftipos ::=IDEN:id ASIGNACION DECLVECTOR CIZQUIERDO valorango:rangoInferior RANGO valorango:rangoSuperior CDERECHO ASIGNACIONVECTOR tipovector:tipov  DSENTENCIAS {:
+	// Recuperamos el ambito y obtenemos la tabla de tipos
+	ScopeIF scope = scopeManager.getCurrentScope();
+	TypeTableIF tablaTipos = scope.getTypeTable();
+
+	// Comprobamos si la tabla de tipos contiene el tipo.
+	if(tablaTipos.containsType(id.getLexema())){
+		semanticErrorManager.semanticFatalError("Tipo " + id.getLexema() + " en linea " + id.getLine() + " incluido en la tabla de tipos anteriormente, error.");
+	} else {
+		if(rangoSuperior.getNum() > rangoInferior.getNum()){ // Solo crearemos el tipo si el rango superior es mayor que el inferior
+			// Creamos el tipo
+			TypeIF t_vector_nuevo = new TypeArray(scope, id.getLexema(), rangoInferior.getNum(), rangoSuperior.getNum(), tipov);
+			tablaTipos.addType(t_vector_nuevo); // Introducimos el tipo en la tabla de tipos
+			semanticErrorManager.semanticDebug("Tipo " + id.getLexema() + " con [" + ((TypeArray)t_vector_nuevo).imprimir() + "] aniadido a la tabla de tipos.");		
+		} else {
+			semanticErrorManager.semanticFatalError("El rango superior del vector " + id.getLexema() + " es mayor que el rango inferior.");
+		}
+	}
+:} deftipos | epsilon;
+
+tipovector ::=BOOLEANO {:
+	RESULT = new Tipovector(scopeManager.searchType("BOOLEANO"), "BOOLEANO");
+:} | ENTERO {:
+	RESULT = new Tipovector(scopeManager.searchType("ENTERO"), "ENTERO");
+:} ;
+
+valorango ::= NUM:valor_num {:
+	RESULT = new Valorango(Integer.parseInt(valor_num.getLexema()));
+	//RESULT = Integer.parseInt(valor_num.getLexema());
+:} | IDEN:id {:
+	// Obtenemos el ambito y la tabla de simbolos
+	ScopeIF scope = scopeManager.getCurrentScope();
+	SymbolTableIF symbolTable = scope.getSymbolTable();
+	// Miramos si la tabla de simbolos contiene el simbolo, nos esperamos que lo haga . 
+	if(symbolTable.containsSymbol(id.getLexema())){
+		SymbolIF symbol = scopeManager.searchSymbol(id.getLexema());
+		if(symbol instanceof SymbolConstant && symbol.getType().getName().equals("ENTERO")){
+			RESULT = new Valorango(((SymbolConstant)symbol).getNum_value());
+		}
+	}else{
+		semanticErrorManager.semanticFatalError("El simbolo "+id.getLexema()+" no esta contenido en la tabla de simbolos o no corresponde a una constante de tipo entero."); 
+	}
+	//RESULT = new Valorango(id.getLexema());
+:} | miembrovector {:
+	// PENDIENTE
+:};
+
 secciontipos ::= COMIENZODECLTIPOS deftipos | epsilon; 
 
+/*================================================*
+ *==========DEFINICION DE VARIABLES===============*
+ *================================================*/
+
 // Definición de variables
-tipovariable ::= BOOLEANO | ENTERO | IDEN ;
-selectorvalororeferencia ::=  PARAMETROVALOR IDEN |expresion ;
-defvariables ::= listavariables DELIMFUNC tipovariable puntoycomaopcional defvariables | epsilon; 
-listavariables ::= selectorvalororeferencia DIDENTIFICADORES listavariables {:/*System.out.println("\n\n1\n\n");*/:}| selectorvalororeferencia {:/*System.out.println("\n\n2\n\n");*/:}| epsilon ;
-seccionvariables ::= DECLVARIABLES defvariables | epsilon  ;
+tipovariable ::= BOOLEANO {:
+	RESULT = new Tipovariable(scopeManager.searchType("BOOLEANO"), "BOOLEANO");
+:}| ENTERO {:
+	RESULT = new Tipovariable(scopeManager.searchType("ENTERO"), "ENTERO");
+:}| IDEN:id {:
+	// Recuperamos el ambito y obtenemos la tabla de tipos
+	ScopeIF scope = scopeManager.getCurrentScope();
+	TypeTableIF tablaTipos = scope.getTypeTable();
+
+	// Comprobamos si la tabla de tipos contiene el tipo.
+	if(tablaTipos.containsType(id.getLexema())){ //Si lo contiene, creamos el tipo
+		RESULT = new Tipovariable(scopeManager.searchType(id.getLexema()), id.getLexema());
+	} else { // Si no lo contiene, lanzamos error
+		semanticErrorManager.semanticFatalError("Tipo " + id.getLexema() + " en linea " + id.getLine() + " incluido en la tabla de tipos anteriormente, error.");
+	}
+:};
+
+selectorvalororeferencia ::=  PARAMETROVALOR IDEN:id {:
+	RESULT = new Selectorvalororeferencia(id.getLexema());
+:} | expresion:ex {:
+	RESULT = (Selectorvalororeferencia)ex; //ERROR no se porque no puedo quitar este casteo
+:};
+
+defvariables ::= listavariables:listVariables DELIMFUNC tipovariable:tipo puntoycomaopcional defvariables:hmTipoVariable {:
+	if(hmTipoVariable == null){ // Si el hashmap de Tipo-ListaVariables esta vacio
+		RESULT = new Defvariables(tipo.getTipo(), (ArrayList<Selectorvalororeferencia>)(listVariables.getListaV()));
+	} else { // Si el hashmap de Tipo-ListaVariables contiene elementos
+		hmTipoVariable.putParTipoVariable(tipo.getTipo(), (ArrayList<Selectorvalororeferencia>)(listVariables.getListaV()));
+		RESULT = hmTipoVariable;
+	}
+:} | epsilon; 
+
+listavariables ::= selectorvalororeferencia:selector DIDENTIFICADORES listavariables:listaV {:
+	listaV.addElemento(selector);
+	RESULT = listaV; 
+:} | selectorvalororeferencia:selector {:
+	RESULT = new Listavariables(selector);
+:} | epsilon ;
+
+seccionvariables ::= DECLVARIABLES defvariables:hmTipoVariables {: 
+	// Obtenemos el ambito y la tabla de simbolos
+	ScopeIF scope = scopeManager.getCurrentScope();
+	SymbolTableIF symbolTable = scope.getSymbolTable();
+
+	System.out.println(hmTipoVariables.toString()); //AQUI
+
+:}| epsilon  ;
+
 puntoycomaopcional ::= DSENTENCIAS | epsilon;
+
+
+/*================================================*
+ *================SUBPROGRAMAS====================*
+ *================================================*/
 
 //reglas de subprogramas
 tiporetornofuncion ::= IDEN | tipovector ;
+
 procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id {:
 	// Creamos el ambito con el nombre del procedimiento
 	String idLexema = id.getLexema();
@@ -274,6 +380,7 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id {:
 	scopeManager.closeScope();
 	semanticErrorManager.semanticDebug("Se ha cerrado el ambito actual.");
 :};
+
 funcion ::= DECLAREFUNCION IDEN:id {:
 	// Creamos el ambito con el nombre de la funcion
 	String idLexema = id.getLexema();
@@ -296,6 +403,10 @@ funcion ::= DECLAREFUNCION IDEN:id {:
 selectorpof ::= procedimiento | funcion ;
 defsubprograma ::=selectorpof  defsubprograma | epsilon ;
 seccionsubprograma ::=COMIENZOSUBPROGRAMAS  defsubprograma  | epsilon ;
+
+/*================================================*
+ *==============PROGRAMA PRINCIPAL================*
+ *================================================*/
 
 // Definición de programa principal
 defprincipal ::= COMIENZOPROGRAMA IDEN:id {:
@@ -324,27 +435,47 @@ defprincipal ::= COMIENZOPROGRAMA IDEN:id {:
 	semanticErrorManager.semanticDebug("Se ha cerrado el ambito actual.");
 :};
 
+/*================================================*
+ *==================EXPRESIONES===================*
+ *================================================*/
+
 // Expresiones
-expresion ::=  expresion MENORQUE  expresion |  expresion IGUALDAD  expresion | IDEN | llamadafuncion | CIERTO | FALSO | miembrovector | NUM | expresionlvl2;
+expresion ::=  expresion MENORQUE  expresion |  expresion IGUALDAD  expresion | IDEN:id {:
+	RESULT = new Selectorvalororeferencia(id.getLexema());
+:} | llamadafuncion | CIERTO | FALSO | miembrovector | NUM | expresionlvl2;
 expresionlvl2 ::=  expresion SUMA expresion | expresionlvl3 ;
 expresionlvl3 ::=  expresion YLOGICA expresion |  expresion PRODUCTO expresion | expresionlvl4;
 expresionlvl4 ::= NOLOGICO  expresion | expresionlvl5 ;
 expresionlvl5 ::= PIZQUIERDO expresion PDERECHO | CIZQUIERDO expresion CDERECHO  ;
 
+/*================================================*
+ *================ACCESO A VECTORES===============*
+ *================================================*/
 
 // Acceso a vectores
 miembrovector::= IDEN CIZQUIERDO valorango CDERECHO;
+
+/*================================================*
+ *============SENTENCIAS DE ASIGNACION============*
+ *================================================*/
  
 // Sentencias de asignacion
 parteizquierdaasignacion ::= IDEN |miembrovector  ;
 sentenciadeasignacion ::= parteizquierdaasignacion ASIGNACION parametroasignacion DSENTENCIAS; 
 parametroasignacion ::= expresion ;
 
+/*================================================*
+ *===============LLAMADA A FUNCION================*
+ *================================================*/
+
 // Llamada a función
 parametrofuncionoproc ::=     listavariables ;
 llamadafuncion ::= IDEN PIZQUIERDO parametrofuncionoproc PDERECHO;  
 sentenciallamadafuncion ::= llamadafuncion DSENTENCIAS;
 
+/*================================================*
+ *===================SENTENCIAS===================*
+ *================================================*/
 
 // Sentencias
 sentencia ::= sentenciadeasignacion | sentenciaif | sentenciafor | sentenciaEscribir | sentenciallamadafuncion ;
@@ -352,20 +483,35 @@ sentenciaFuncion ::= sentenciadeasignacion | sentenciaifFuncion | sentenciaforFu
 listaSentencias ::= sentencia  listaSentencias | epsilon;
 listaSentenciasFuncion ::= sentenciaFuncion listaSentenciasFuncion | epsilon;
 
+/*================================================*
+ *======================IF========================*
+ *================================================*/
+
 // if
 sentenciaif ::= COMIENZOSI expresion  STARTIF DELIMFUNC listaSentencias rellenoif  FINBLOQUESENTENCIAS COMIENZOSI DSENTENCIAS ;
 sentenciaifFuncion ::= COMIENZOSI expresion  STARTIF DELIMFUNC listaSentenciasFuncion rellenoifFuncion  FINBLOQUESENTENCIAS COMIENZOSI DSENTENCIAS ;
 rellenoifFuncion ::=  ALTERNATIVASI DELIMFUNC  listaSentenciasFuncion | epsilon ;
 rellenoif ::=  ALTERNATIVASI DELIMFUNC  listaSentencias | epsilon ;
 
+/*================================================*
+ *======================FOR=======================*
+ *================================================*/
+
 // for 
 sentenciafor ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO expresion DELIMFUNC listaSentencias FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
 sentenciaforFuncion ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO expresion DELIMFUNC listaSentenciasFuncion FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
 
+/*================================================*
+ *===================ESCRIBIR=====================*
+ *================================================*/
 
 // escribir. 
 parametroEscribir ::= STRING | expresion | epsilon ;
 sentenciaEscribir ::= ESCRIBIR PIZQUIERDO parametroEscribir PDERECHO DSENTENCIAS;
+
+/*================================================*
+ *===================DEVOLVER=====================*
+ *================================================*/
 
 // devolver
 sentenciaDevolver ::= FRETURN expresion DSENTENCIAS;
