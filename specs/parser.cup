@@ -26,11 +26,23 @@ import compiler.code.*;
 
 action code {:
 	
+	// Codigo del equipo docente
 	SyntaxErrorManager   syntaxErrorManager   = CompilerContext.getSyntaxErrorManager();
 	SemanticErrorManager semanticErrorManager = CompilerContext.getSemanticErrorManager ();
 	ScopeManagerIF       scopeManager         = CompilerContext.getScopeManager ();
 	FinalCodeFactoryIF   finalCodeFactory     = CompilerContext.getFinalCodeFactory ();
 
+	// Metodos creados por mi
+	public void errorSiExisteSimbolo(String id){
+		// Recuperamos el ambito y obtenemos la tabla de simbolos
+		ScopeIF scope = scopeManager.getCurrentScope();
+		SymbolTableIF tablaSimbolos = scope.getSymbolTable();
+
+		// Comprobamos si la tabla de simbolos contiene el simbolo
+		if(tablaSimbolos.containsSymbol(id)){
+			semanticErrorManager.semanticFatalError("Constante " + id + " declarada anteriormente, error.");
+		}
+	}
 :}	
 
 parser code {:
@@ -316,14 +328,16 @@ tipovariable ::= BOOLEANO {:
 	if(tablaTipos.containsType(id.getLexema())){ //Si lo contiene, creamos el tipo
 		RESULT = new Tipovariable(scopeManager.searchType(id.getLexema()), id.getLexema());
 	} else { // Si no lo contiene, lanzamos error
-		semanticErrorManager.semanticFatalError("Tipo " + id.getLexema() + " en linea " + id.getLine() + " incluido en la tabla de tipos anteriormente, error.");
+		semanticErrorManager.semanticFatalError("Tipo " + id.getLexema() + " en linea " + id.getLine() + " no esta incluido en la tabla de tipos anteriormente, error.");
 	}
 :};
 
 selectorvalororeferencia ::=  PARAMETROVALOR IDEN:id {:
+	errorSiExisteSimbolo(id.getLexema());
 	RESULT = new Selectorvalororeferencia(id.getLexema());
 :} | expresion:ex {:
 	RESULT = (Selectorvalororeferencia)ex; //ERROR no se porque no puedo quitar este casteo
+	//PENDIENTE de terminar
 :};
 
 defvariables ::= listavariables:listVariables DELIMFUNC tipovariable:tipo puntoycomaopcional defvariables:hmTipoVariable {:
@@ -347,7 +361,22 @@ seccionvariables ::= DECLVARIABLES defvariables:hmTipoVariables {:
 	ScopeIF scope = scopeManager.getCurrentScope();
 	SymbolTableIF symbolTable = scope.getSymbolTable();
 
-	System.out.println(hmTipoVariables.toString()); //AQUI
+	semanticErrorManager.semanticDebug("Variables creadas con su correspondiente tipo: "+hmTipoVariables.toString());
+
+	HashMap<TypeIF, ArrayList<Selectorvalororeferencia>> mapa = hmTipoVariables.getVariablesDeUnTipo();
+
+	Iterator<TypeIF> it = mapa.keySet().iterator();
+		while(it.hasNext()){
+			TypeIF next_tipo = it.next();
+			ArrayList<Selectorvalororeferencia> lista_variables = mapa.get(next_tipo);
+			for(int i = 0; i < lista_variables.size(); i++) { 
+			    Selectorvalororeferencia variable = lista_variables.get(i);
+				errorSiExisteSimbolo(variable.getId());
+				SymbolVariable symbol = new SymbolVariable(scope, variable.getId(), next_tipo);
+				symbolTable.addSymbol(symbol);
+			} 
+		}
+
 
 :}| epsilon  ;
 
@@ -371,7 +400,7 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id {:
 	semanticErrorManager.semanticDebug("El nombre del nuevo ambito es: " + scope.getName());
 	semanticErrorManager.semanticDebug("El nivel del nuevo ambito es: " + scope.getLevel());
 	
-	// Obtencion de la tabla de tipos y simbolos
+	// Obtencion de la tabla de tipos y simbolos //BORRAR creo, no se usa para nada
 	SymbolTableIF symbolTable = scope.getSymbolTable();
 	TypeTableIF typeTable = scope.getTypeTable();
 	
@@ -391,7 +420,7 @@ funcion ::= DECLAREFUNCION IDEN:id {:
 	semanticErrorManager.semanticDebug("El nombre del nuevo ambito es: " + scope.getName());
 	semanticErrorManager.semanticDebug("El nivel del nuevo ambito es: " + scope.getLevel());
 	
-	// Obtencion de la tabla de tipos y simbolos
+	// Obtencion de la tabla de tipos y simbolos //BORRAR creo, no se usa para nada
 	SymbolTableIF symbolTable = scope.getSymbolTable();
 	TypeTableIF typeTable = scope.getTypeTable();
 	
@@ -420,7 +449,7 @@ defprincipal ::= COMIENZOPROGRAMA IDEN:id {:
 	semanticErrorManager.semanticDebug("El nivel del nuevo ambito es: " + scope.getLevel()); // El nivel esperado es 0
 	
 	// Obtencion de la tabla de tipos y simbolos
-	SymbolTableIF symbolTable = scope.getSymbolTable();
+	SymbolTableIF symbolTable = scope.getSymbolTable(); //BORRAR No estoy segura para que lo recupero si no se usa
 	TypeTableIF typeTable = scope.getTypeTable();
 	
 	// Introducimos los tipos entero y booleano que describe el enunciado
