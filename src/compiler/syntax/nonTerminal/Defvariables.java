@@ -38,7 +38,7 @@ public class Defvariables extends NonTerminal {
 
 	@Override
 	public String toString() {
-		Iterator<TypeIF> it = variablesDeUnTipo.keySet().iterator();
+		/*Iterator<TypeIF> it = variablesDeUnTipo.keySet().iterator();
 		while(it.hasNext()){
 			TypeIF next = it.next();
 			System.out.println("# TIPO: "+next.toString());
@@ -50,7 +50,7 @@ public class Defvariables extends NonTerminal {
 			    System.out.println("   - salto linea -");
 			} 
 			//aqui
-		}
+		}*/
 		return "Defvariables [variablesDeUnTipo=" + variablesDeUnTipo + "]";
 	}
 	
