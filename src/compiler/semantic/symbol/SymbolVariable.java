@@ -21,10 +21,7 @@ public class SymbolVariable
      * @param name The symbol name.
      * @param type The symbol type.
      */
-    public SymbolVariable (ScopeIF scope, 
-                           String name,
-                           TypeIF type)
-    {
+    public SymbolVariable (ScopeIF scope, String name, TypeIF type) {
         super (scope, name, type);
     } 
 }
