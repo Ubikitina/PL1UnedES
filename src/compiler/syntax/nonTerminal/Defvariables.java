@@ -9,9 +9,6 @@ import java.util.Map.Entry;
 import es.uned.lsi.compiler.semantic.type.TypeIF;
 
 public class Defvariables extends NonTerminal {
-
-	private ArrayList<Selectorvalororeferencia> listaV;
-	private TypeIF tipo;
 	
 	HashMap<TypeIF, ArrayList<Selectorvalororeferencia>> variablesDeUnTipo;
 	
@@ -29,7 +26,13 @@ public class Defvariables extends NonTerminal {
 	}
 	
 	public void putParTipoVariable(TypeIF t, ArrayList<Selectorvalororeferencia> l) {
-		variablesDeUnTipo.put(t, l);
+		if(variablesDeUnTipo.containsKey(t)) {
+			ArrayList<Selectorvalororeferencia> aux = variablesDeUnTipo.get(t);
+			aux.addAll(l);
+			variablesDeUnTipo.put(t, aux);
+		}else {
+			variablesDeUnTipo.put(t, l);
+		}		
 	}
 
 	public HashMap<TypeIF, ArrayList<Selectorvalororeferencia>> getVariablesDeUnTipo() {
