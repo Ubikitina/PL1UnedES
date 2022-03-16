@@ -6,9 +6,6 @@ import es.uned.lsi.compiler.semantic.ScopeIF;
  * Class for TypeFunction.
  */
 
-// TODO: Student work
-//       Include properties to characterize function declarations
-
 public class TypeFunction
     extends TypeProcedure
 {   

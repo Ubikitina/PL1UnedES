@@ -7,8 +7,6 @@ import es.uned.lsi.compiler.semantic.type.TypeBase;
  * Class for TypeProcedure.
  */
 
-// TODO: Student work
-//       Include properties to characterize procedure declarations
 
 public class TypeProcedure
     extends TypeBase
