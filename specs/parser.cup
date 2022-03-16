@@ -291,11 +291,11 @@ valorango ::= NUM:valor_num {:
 	RESULT = new Valorango(Integer.parseInt(valor_num.getLexema()));
 	//RESULT = Integer.parseInt(valor_num.getLexema());
 :} | IDEN:id {:
-	// Obtenemos el ambito y la tabla de simbolos
+	// Obtenemos el ambito
 	ScopeIF scope = scopeManager.getCurrentScope();
-	SymbolTableIF symbolTable = scope.getSymbolTable();
+	
 	// Miramos si la tabla de simbolos contiene el simbolo, nos esperamos que lo haga . 
-	if(symbolTable.containsSymbol(id.getLexema())){
+	if(scopeManager.containsSymbol(id.getLexema())){
 		SymbolIF symbol = scopeManager.searchSymbol(id.getLexema());
 		if(symbol instanceof SymbolConstant && symbol.getType().getName().equals("ENTERO")){
 			RESULT = new Valorango(((SymbolConstant)symbol).getNum_value());
@@ -320,12 +320,11 @@ tipovariable ::= BOOLEANO {:
 :}| ENTERO {:
 	RESULT = new Tipovariable(scopeManager.searchType("ENTERO"), "ENTERO");
 :}| IDEN:id {:
-	// Recuperamos el ambito y obtenemos la tabla de tipos
+	// Recuperamos el ambito
 	ScopeIF scope = scopeManager.getCurrentScope();
-	TypeTableIF tablaTipos = scope.getTypeTable();
 
 	// Comprobamos si la tabla de tipos contiene el tipo.
-	if(tablaTipos.containsType(id.getLexema())){ //Si lo contiene, creamos el tipo
+	if(scopeManager.containsType(id.getLexema())){ //Si lo contiene, creamos el tipo
 		RESULT = new Tipovariable(scopeManager.searchType(id.getLexema()), id.getLexema());
 	} else { // Si no lo contiene, lanzamos error
 		semanticErrorManager.semanticFatalError("Tipo " + id.getLexema() + " en linea " + id.getLine() + " no esta incluido en la tabla de tipos anteriormente, error.");
