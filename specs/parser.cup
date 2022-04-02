@@ -416,11 +416,35 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id {:
 
 	// Creamos el ambito con el nombre del procedimiento y emitimos el mensaje de comprobación
 	scopeManager.openScope(id.getLexema());
+	scope = scopeManager.getCurrentScope();
 	semanticErrorManager.semanticDebug("El nombre del nuevo ambito es: " + scope.getName() + " con el nivel: " + scope.getLevel());	
 
 
 	
-:} PIZQUIERDO defvariables PDERECHO DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentencia listaSentencias   FINBLOQUESENTENCIAS DSENTENCIAS {:
+:} PIZQUIERDO defvariables:mapaVar {:
+	// listVar se trata de una clase que contiene un HashMap con pares de tipo y lista de variables que le pasamos al procedimiento. Cogeremos cada variable uno a uno e incluiremos en la tabla de símbolos.
+	if(mapaVar != null){
+		// Obtenemos el ambito y la tabla de simbolos
+		ScopeIF scope = scopeManager.getCurrentScope();
+		SymbolTableIF symbolTable = scope.getSymbolTable();
+
+		// Primero recuperamos el HashMap
+		HashMap<TypeIF, ArrayList<Selectorvalororeferencia>> mapa = mapaVar.getVariablesDeUnTipo();
+
+		// Creamos un iterador para recorrer el HashMap e introducimos los variables en la tabla de simbolos
+		Iterator<TypeIF> it = mapa.keySet().iterator();
+		while(it.hasNext()){
+			TypeIF next_tipo = it.next();
+			ArrayList<Selectorvalororeferencia> lista_variables = mapa.get(next_tipo);
+			for(int i = 0; i < lista_variables.size(); i++) { 
+			    Selectorvalororeferencia variable = lista_variables.get(i);
+				errorSiExisteSimbolo(variable.getId(), 0); //TODO la linea no esta definida aqui
+				SymbolVariable symbol = new SymbolVariable(scope, variable.getId(), next_tipo);
+				symbolTable.addSymbol(symbol);
+			} 
+		}
+	}
+:} PDERECHO DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentencia listaSentencias   FINBLOQUESENTENCIAS DSENTENCIAS {:
 	// Cerramos el ambito actual (current scope)
 	scopeManager.closeScope();
 	semanticErrorManager.semanticDebug("Se ha cerrado el ambito actual.");
@@ -444,9 +468,34 @@ funcion ::= DECLAREFUNCION IDEN:id {:
 
 	// Creamos el ambito con el nombre de la funcion y emitimos el mensaje de comprobación
 	scopeManager.openScope(id.getLexema());
+	scope = scopeManager.getCurrentScope();
 	semanticErrorManager.semanticDebug("El nombre del nuevo ambito es: " + scope.getName() + " con el nivel: " + scope.getLevel());
 	
-:} PIZQUIERDO defvariables PDERECHO DELIMFUNC tiporetornofuncion DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentenciaFuncion listaSentenciasFuncion FINBLOQUESENTENCIAS DSENTENCIAS {:
+:} PIZQUIERDO defvariables:mapaVar {:
+	// listVar se trata de una clase que contiene un HashMap con pares de tipo y lista de variables que le pasamos a la funcion. Cogeremos cada variable uno a uno e incluiremos en la tabla de símbolos.
+	if(mapaVar != null){
+		// Obtenemos el ambito y la tabla de simbolos
+		ScopeIF scope = scopeManager.getCurrentScope();
+		SymbolTableIF symbolTable = scope.getSymbolTable();
+
+		// Primero recuperamos el HashMap
+		HashMap<TypeIF, ArrayList<Selectorvalororeferencia>> mapa = mapaVar.getVariablesDeUnTipo();
+
+		// Creamos un iterador para recorrer el HashMap e introducimos los variables en la tabla de simbolos
+		Iterator<TypeIF> it = mapa.keySet().iterator();
+		while(it.hasNext()){
+			TypeIF next_tipo = it.next();
+			ArrayList<Selectorvalororeferencia> lista_variables = mapa.get(next_tipo);
+			for(int i = 0; i < lista_variables.size(); i++) { 
+			    Selectorvalororeferencia variable = lista_variables.get(i);
+				errorSiExisteSimbolo(variable.getId(), 0); //TODO la linea no esta definida aqui
+				SymbolVariable symbol = new SymbolVariable(scope, variable.getId(), next_tipo);
+				symbolTable.addSymbol(symbol);
+			} 
+		}
+
+	}
+:} PDERECHO DELIMFUNC tiporetornofuncion DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentenciaFuncion listaSentenciasFuncion FINBLOQUESENTENCIAS DSENTENCIAS {:
 	// Cerramos el ambito actual (current scope)
 	scopeManager.closeScope();
 	semanticErrorManager.semanticDebug("Se ha cerrado el ambito actual.");
@@ -463,8 +512,7 @@ seccionsubprograma ::=COMIENZOSUBPROGRAMAS  defsubprograma  | epsilon ;
 defprincipal ::= COMIENZOPROGRAMA IDEN:id {:
 
 	// Creamos el ambito global con el nombre del programa principal
-	String idLexema = id.getLexema();
-	scopeManager.openScope(idLexema);
+	scopeManager.openScope(id.getLexema());
 	ScopeIF scope = scopeManager.getCurrentScope();
 	// Comprobaciones para ver si el ambito se ha creado correctamente
 	semanticErrorManager.semanticDebug("El nombre del nuevo ambito es: " + scope.getName());
