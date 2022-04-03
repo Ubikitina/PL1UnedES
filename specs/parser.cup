@@ -231,22 +231,22 @@ defconstantes ::=   IDEN:id ASIGNACION valorconstante:valor DSENTENCIAS {:
 	SymbolTableIF tablaSimbolos = scope.getSymbolTable();
 
 	// Comprobamos si la tabla de simbolos contiene el simbolo
-	if(tablaSimbolos.containsSymbol(id.getLexema())){
-		semanticErrorManager.semanticFatalError("Constante " + id.getLexema() + " en linea " + id.getLine() + " declarada anteriormente, error.");
+	if(tablaSimbolos.containsSymbol(id.getLexema().toUpperCase())){
+		semanticErrorManager.semanticFatalError("Constante " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " declarada anteriormente, error.");
 	} else {
-		semanticErrorManager.semanticDebug("Constante " + id.getLexema() + " en linea " + id.getLine() + " no declarada.");
+		semanticErrorManager.semanticDebug("Constante " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " no declarada.");
 
 		// Introducimos la constante en la tabla de simbolos
 		if(valor.esNumero()){ // si es numero lo aniadimos como numero
 			TypeIF t_entero = scopeManager.searchType("ENTERO");
-			SymbolConstant simboloConstante = new SymbolConstant(scope, id.getLexema(), valor.getValor_num(), t_entero);
+			SymbolConstant simboloConstante = new SymbolConstant(scope, id.getLexema().toUpperCase(), valor.getValor_num(), t_entero);
 			tablaSimbolos.addSymbol(simboloConstante);
-			semanticErrorManager.semanticDebug("Constante " + id.getLexema() + " con valor " + valor.getValor_num() + "  declarada.");
+			semanticErrorManager.semanticDebug("Constante " + id.getLexema().toUpperCase() + " con valor " + valor.getValor_num() + "  declarada.");
 		}else{ // si no, es booleano, y lo aniadimos como booleano
 			TypeIF t_booleano = scopeManager.searchType("BOOLEANO");
-			SymbolConstant simboloConstante = new SymbolConstant(scope, id.getLexema(), valor.getValor_bool(), t_booleano);
+			SymbolConstant simboloConstante = new SymbolConstant(scope, id.getLexema().toUpperCase(), valor.getValor_bool(), t_booleano);
 			tablaSimbolos.addSymbol(simboloConstante);
-			semanticErrorManager.semanticDebug("Constante " + id.getLexema() + " con valor " + valor.getValor_bool() + "  declarada.");
+			semanticErrorManager.semanticDebug("Constante " + id.getLexema().toUpperCase() + " con valor " + valor.getValor_bool() + "  declarada.");
 		}
 
 	}
@@ -259,7 +259,7 @@ valorconstante ::=   FALSO {:
 :} | CIERTO {:
 	RESULT = new Valorconstante(true);
 :} | NUM:valor_num {:
-	RESULT = new Valorconstante(Integer.parseInt(valor_num.getLexema()));
+	RESULT = new Valorconstante(Integer.parseInt(valor_num.getLexema().toUpperCase()));
 :} ;
 
 seccionconstantes ::= BCONSTANTES defconstantes | epsilon;
@@ -275,17 +275,17 @@ deftipos ::=IDEN:id ASIGNACION DECLVECTOR CIZQUIERDO valorango:rangoInferior RAN
 	ScopeIF scope = scopeManager.getCurrentScope();
 	TypeTableIF tablaTipos = scope.getTypeTable();
 
-	// Comprobamos si la tabla de tipos contiene el tipo.
-	if(tablaTipos.containsType(id.getLexema())){ //CUIDADO es posible que tenga que cambiar al scopeManager en vez de tablaTipos
-		semanticErrorManager.semanticFatalError("Tipo " + id.getLexema() + " en linea " + id.getLine() + " incluido en la tabla de tipos anteriormente, error.");
-	} else {
+	// Comprobamos si el tipo estaba declarado anteriormente, para emitir error si es asi.
+	if(scopeManager.containsType(id.getLexema().toUpperCase())){ 
+		semanticErrorManager.semanticFatalError("Tipo " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " incluido en la tabla de tipos anteriormente, error.");
+	} else { // Si el tipo no estaba declarado anteriormente
 		if(rangoSuperior.getNum() > rangoInferior.getNum()){ // Solo crearemos el tipo si el rango superior es mayor que el inferior
 			// Creamos el tipo
-			TypeIF t_vector_nuevo = new TypeArray(scope, id.getLexema(), rangoInferior.getNum(), rangoSuperior.getNum(), tipov);
+			TypeIF t_vector_nuevo = new TypeArray(scope, id.getLexema().toUpperCase(), rangoInferior.getNum(), rangoSuperior.getNum(), tipov);
 			tablaTipos.addType(t_vector_nuevo); // Introducimos el tipo en la tabla de tipos
-			semanticErrorManager.semanticDebug("Tipo " + id.getLexema() + " con [" + ((TypeArray)t_vector_nuevo).imprimir() + "] aniadido a la tabla de tipos.");		
-		} else {
-			semanticErrorManager.semanticFatalError("El rango superior del vector " + id.getLexema() + " es mayor que el rango inferior.");
+			semanticErrorManager.semanticDebug("Tipo " + id.getLexema().toUpperCase() + " con [" + ((TypeArray)t_vector_nuevo).imprimir() + "] aniadido a la tabla de tipos.");		
+		} else { // Emitimos error si los rangos no encajan
+			semanticErrorManager.semanticFatalError("El rango superior del vector " + id.getLexema().toUpperCase() + " es mayor que el rango inferior.");
 		}
 	}
 :} deftipos | epsilon;
@@ -297,22 +297,22 @@ tipovector ::=BOOLEANO {:
 :} ;
 
 valorango ::= NUM:valor_num {:
-	RESULT = new Valorango(Integer.parseInt(valor_num.getLexema()));
-	//RESULT = Integer.parseInt(valor_num.getLexema());
+	RESULT = new Valorango(Integer.parseInt(valor_num.getLexema().toUpperCase()));
+	//RESULT = Integer.parseInt(valor_num.getLexema().toUpperCase());
 :} | IDEN:id {:
 	// Obtenemos el ambito
 	ScopeIF scope = scopeManager.getCurrentScope();
 	
 	// Miramos si la tabla de simbolos contiene el simbolo, nos esperamos que lo haga . 
-	if(scopeManager.containsSymbol(id.getLexema())){
-		SymbolIF symbol = scopeManager.searchSymbol(id.getLexema());
+	if(scopeManager.containsSymbol(id.getLexema().toUpperCase())){
+		SymbolIF symbol = scopeManager.searchSymbol(id.getLexema().toUpperCase());
 		if(symbol instanceof SymbolConstant && symbol.getType().getName().equals("ENTERO")){
 			RESULT = new Valorango(((SymbolConstant)symbol).getNum_value());
 		}
 	}else{
-		semanticErrorManager.semanticFatalError("El simbolo "+id.getLexema()+" no esta contenido en la tabla de simbolos o no corresponde a una constante de tipo entero."); 
+		semanticErrorManager.semanticFatalError("El simbolo "+id.getLexema().toUpperCase()+" no esta contenido en la tabla de simbolos o no corresponde a una constante de tipo entero."); 
 	}
-	//RESULT = new Valorango(id.getLexema());
+	//RESULT = new Valorango(id.getLexema().toUpperCase());
 :} | miembrovector {:
 	// PENDIENTE
 :};
@@ -333,16 +333,16 @@ tipovariable ::= BOOLEANO {:
 	ScopeIF scope = scopeManager.getCurrentScope();
 
 	// Comprobamos si la tabla de tipos contiene el tipo.
-	if(scopeManager.containsType(id.getLexema())){ //Si lo contiene, creamos el tipo
-		RESULT = new Tipovariable(scopeManager.searchType(id.getLexema()), id.getLexema());
+	if(scopeManager.containsType(id.getLexema().toUpperCase())){ //Si lo contiene, creamos el tipo
+		RESULT = new Tipovariable(scopeManager.searchType(id.getLexema().toUpperCase()), id.getLexema().toUpperCase());
 	} else { // Si no lo contiene, lanzamos error
-		semanticErrorManager.semanticFatalError("Tipo " + id.getLexema() + " en linea " + id.getLine() + " no esta incluido en la tabla de tipos anteriormente, error.");
+		semanticErrorManager.semanticFatalError("Tipo " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " no esta incluido en la tabla de tipos anteriormente, error.");
 	}
 :};
 
 selectorvalororeferencia ::=  PARAMETROVALOR IDEN:id {:
-	errorSiExisteSimbolo(id.getLexema(), id.getLine());
-	RESULT = new Selectorvalororeferencia(id.getLexema());
+	errorSiExisteSimbolo(id.getLexema().toUpperCase(), id.getLine());
+	RESULT = new Selectorvalororeferencia(id.getLexema().toUpperCase());
 :} | expresion:ex {:
 	RESULT = (Selectorvalororeferencia)ex; //ERROR no se porque no puedo quitar este casteo
 	//PENDIENTE de terminar
@@ -396,7 +396,9 @@ puntoycomaopcional ::= DSENTENCIAS | epsilon;
  *================================================*/
 
 //reglas de subprogramas
-tiporetornofuncion ::= IDEN | tipovector ;
+tiporetornofuncion ::= tipovector:t {:
+	RESULT = t;
+:} ; 
 
 procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id {:
 	// Obtenemos el ambito, la tabla de tipos y la tabla de simbolos
@@ -405,17 +407,17 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id {:
 	TypeTableIF typeTable = scope.getTypeTable();
 
 	// Invocamos los metodos que lanzan un error si el id esta anteriormente declarado bien en la tabla de simbolos o bien en la tabla de tipos
-	errorSiExisteSimbolo(id.getLexema(), id.getLine());
-	errorSiExisteTipo(id.getLexema(), id.getLine());
+	errorSiExisteSimbolo(id.getLexema().toUpperCase(), id.getLine());
+	errorSiExisteTipo(id.getLexema().toUpperCase(), id.getLine());
 	
 	// Creamos el tipo y el simbolo del procedimiento
-	TypeProcedure tp = new TypeProcedure(scope, id.getLexema());
-	typeTable.addType(id.getLexema(), tp);
-	SymbolProcedure sp = new SymbolProcedure(scope, id.getLexema(), tp);
-	symbolTable.addSymbol(id.getLexema(), sp);
+	TypeProcedure tp = new TypeProcedure(scope, id.getLexema().toUpperCase());
+	typeTable.addType(id.getLexema().toUpperCase(), tp);
+	SymbolProcedure sp = new SymbolProcedure(scope, id.getLexema().toUpperCase(), tp);
+	symbolTable.addSymbol(id.getLexema().toUpperCase(), sp);
 
 	// Creamos el ambito con el nombre del procedimiento y emitimos el mensaje de comprobación
-	scopeManager.openScope(id.getLexema());
+	scopeManager.openScope(id.getLexema().toUpperCase());
 	scope = scopeManager.getCurrentScope();
 	semanticErrorManager.semanticDebug("El nombre del nuevo ambito es: " + scope.getName() + " con el nivel: " + scope.getLevel());	
 
@@ -439,7 +441,7 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id {:
 			for(int i = 0; i < lista_variables.size(); i++) { 
 			    Selectorvalororeferencia variable = lista_variables.get(i);
 				errorSiExisteSimbolo(variable.getId(), 0); //TODO la linea no esta definida aqui
-				SymbolVariable symbol = new SymbolVariable(scope, variable.getId(), next_tipo);
+				SymbolParameter symbol = new SymbolParameter(scope, variable.getId(), next_tipo);
 				symbolTable.addSymbol(symbol);
 			} 
 		}
@@ -457,17 +459,17 @@ funcion ::= DECLAREFUNCION IDEN:id {:
 	TypeTableIF typeTable = scope.getTypeTable();
 
 	// Invocamos los metodos que lanzan un error si el id esta anteriormente declarado bien en la tabla de simbolos o bien en la tabla de tipos
-	errorSiExisteSimbolo(id.getLexema(), id.getLine());
-	errorSiExisteTipo(id.getLexema(), id.getLine());
+	errorSiExisteSimbolo(id.getLexema().toUpperCase(), id.getLine());
+	errorSiExisteTipo(id.getLexema().toUpperCase(), id.getLine());
 	
 	// Creamos el tipo y el simbolo de la funcion
-	TypeFunction tf = new TypeFunction(scope, id.getLexema());
-	typeTable.addType(id.getLexema(), tf);
-	SymbolFunction sf = new SymbolFunction(scope, id.getLexema(), tf);
-	symbolTable.addSymbol(id.getLexema(), sf);
+	TypeFunction tf = new TypeFunction(scope, id.getLexema().toUpperCase());
+	typeTable.addType(id.getLexema().toUpperCase(), tf);
+	SymbolFunction sf = new SymbolFunction(scope, id.getLexema().toUpperCase(), tf);
+	symbolTable.addSymbol(id.getLexema().toUpperCase(), sf);
 
 	// Creamos el ambito con el nombre de la funcion y emitimos el mensaje de comprobación
-	scopeManager.openScope(id.getLexema());
+	scopeManager.openScope(id.getLexema().toUpperCase());
 	scope = scopeManager.getCurrentScope();
 	semanticErrorManager.semanticDebug("El nombre del nuevo ambito es: " + scope.getName() + " con el nivel: " + scope.getLevel());
 	
@@ -489,13 +491,18 @@ funcion ::= DECLAREFUNCION IDEN:id {:
 			for(int i = 0; i < lista_variables.size(); i++) { 
 			    Selectorvalororeferencia variable = lista_variables.get(i);
 				errorSiExisteSimbolo(variable.getId(), 0); //TODO la linea no esta definida aqui
-				SymbolVariable symbol = new SymbolVariable(scope, variable.getId(), next_tipo);
+				SymbolParameter symbol = new SymbolParameter(scope, variable.getId(), next_tipo);
 				symbolTable.addSymbol(symbol);
 			} 
 		}
 
 	}
-:} PDERECHO DELIMFUNC tiporetornofuncion DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentenciaFuncion listaSentenciasFuncion FINBLOQUESENTENCIAS DSENTENCIAS {:
+:} PDERECHO DELIMFUNC tiporetornofuncion:tipo DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentenciaFuncion listaSentenciasFuncion FINBLOQUESENTENCIAS DSENTENCIAS {:
+	// Comprobar que exista el tipo de retorno. Para ello, si no lo contiene, lanzaremos un error.
+	if(!scopeManager.containsType(((Tipovector)tipo).getNombre_tipo())){
+		semanticErrorManager.semanticFatalError("Tipo " + ((Tipovector)tipo).getNombre_tipo() + " de retorno de funcion no existe, error.");
+	} //REVISAR - No se por que tengo que castear, parece ser algo de la propagacion. Ademas es posible que no sea necesario hacer esta comprobacion, porque ya tenemos el tipo en su sitio y cualquier fallo lo detectaria la sintaxis
+
 	// Cerramos el ambito actual (current scope)
 	scopeManager.closeScope();
 	semanticErrorManager.semanticDebug("Se ha cerrado el ambito actual.");
@@ -512,7 +519,7 @@ seccionsubprograma ::=COMIENZOSUBPROGRAMAS  defsubprograma  | epsilon ;
 defprincipal ::= COMIENZOPROGRAMA IDEN:id {:
 
 	// Creamos el ambito global con el nombre del programa principal
-	scopeManager.openScope(id.getLexema());
+	scopeManager.openScope(id.getLexema().toUpperCase());
 	ScopeIF scope = scopeManager.getCurrentScope();
 	// Comprobaciones para ver si el ambito se ha creado correctamente
 	semanticErrorManager.semanticDebug("El nombre del nuevo ambito es: " + scope.getName());
@@ -540,7 +547,7 @@ defprincipal ::= COMIENZOPROGRAMA IDEN:id {:
 
 // Expresiones
 expresion ::=  expresion MENORQUE  expresion |  expresion IGUALDAD  expresion | IDEN:id {:
-	RESULT = new Selectorvalororeferencia(id.getLexema());
+	RESULT = new Selectorvalororeferencia(id.getLexema().toUpperCase());
 :} | llamadafuncion | CIERTO | FALSO | miembrovector | NUM | expresionlvl2;
 expresionlvl2 ::=  expresion SUMA expresion | expresionlvl3 ;
 expresionlvl3 ::=  expresion YLOGICA expresion |  expresion PRODUCTO expresion | expresionlvl4;
