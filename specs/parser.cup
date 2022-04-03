@@ -298,21 +298,19 @@ tipovector ::=BOOLEANO {:
 
 valorango ::= NUM:valor_num {:
 	RESULT = new Valorango(Integer.parseInt(valor_num.getLexema().toUpperCase()));
-	//RESULT = Integer.parseInt(valor_num.getLexema().toUpperCase());
 :} | IDEN:id {:
 	// Obtenemos el ambito
 	ScopeIF scope = scopeManager.getCurrentScope();
 	
-	// Miramos si la tabla de simbolos contiene el simbolo, nos esperamos que lo haga . 
+	// Miramos si la tabla de simbolos contiene el simbolo, nos esperamos que lo haga. 
 	if(scopeManager.containsSymbol(id.getLexema().toUpperCase())){
 		SymbolIF symbol = scopeManager.searchSymbol(id.getLexema().toUpperCase());
 		if(symbol instanceof SymbolConstant && symbol.getType().getName().equals("ENTERO")){
-			RESULT = new Valorango(((SymbolConstant)symbol).getNum_value());
+			RESULT = new Valorango(((SymbolConstant)symbol).getNum_value()); // Desde la propia tabla de simbolos obtenemos el valor numerico de este simbolo para crear el valorango
 		}
 	}else{
 		semanticErrorManager.semanticFatalError("El simbolo "+id.getLexema().toUpperCase()+" no esta contenido en la tabla de simbolos o no corresponde a una constante de tipo entero."); 
 	}
-	//RESULT = new Valorango(id.getLexema().toUpperCase());
 :} | miembrovector {:
 	// PENDIENTE
 :};
