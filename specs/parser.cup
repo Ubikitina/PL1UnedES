@@ -138,7 +138,7 @@ non terminal seccionvariables;
 non terminal defsubprograma;
 non terminal puntoycomaopcional;
 
-non terminal tiporetornofuncion;
+non terminal Tipovector tiporetornofuncion;
 non terminal seccionsubprograma;
 non terminal defprincipal;
 non terminal Selectorvalororeferencia selectorvalororeferencia;
@@ -153,7 +153,7 @@ non terminal Expresion expresionlvl5;
 
 
 
-non terminal Valorango miembrovector;
+non terminal Miembrovector miembrovector;
 non terminal procedimiento;
 non terminal funcion;
 non terminal selectorpof;
@@ -349,7 +349,7 @@ valorango ::= NUM:valor_num {:
 :} | IDEN:id {:
 	RESULT = new Valorango(id.getLexema().toUpperCase(), true, false);
 :} | miembrovector:m {:
-	RESULT = m;
+	RESULT = new Valorango(m.getId(), false, true);
 :};
 
 secciontipos ::= COMIENZODECLTIPOS deftipos | epsilon; 
@@ -380,7 +380,8 @@ selectorvalororeferencia ::=  PARAMETROVALOR IDEN:id {:
 	RESULT = new Selectorvalororeferencia(id.getLexema().toUpperCase(), false);
 :} | expresion:ex {:
 	RESULT = new Selectorvalororeferencia(ex.getId(), true);
-	//TODO Pendiente de terminar, solo he contemplado la parte de IDEN, faltarian las demas expresiones
+	//TODO Pendiente de terminar, solo he contemplado la parte de IDEN, faltarian las demas expresiones para las llamadas a funciones.
+	// Volver cuando vaya a hacer las llamadas a las funciones.
 :};
 
 defvariables ::= listavariables:listVariables DELIMFUNC tipovariable:tipo puntoycomaopcional defvariables:hmTipoVariable {:
@@ -423,14 +424,10 @@ seccionvariables ::= DECLVARIABLES defvariables:hmTipoVariables {:
 					symbolTable.addSymbol(symbol);
 				}else{ // si no es por valor, lanzamos error
 					semanticErrorManager.semanticFatalError("No se puede declarar la variable " + variable.getId() + ", es por referencia.");
+				}
 			}
-			}
-			
-			
 		} 
 	}
-
-
 :}| epsilon  ;
 
 puntoycomaopcional ::= DSENTENCIAS | epsilon;
@@ -469,7 +466,7 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id {:
 
 	
 :} PIZQUIERDO defvariables:mapaVar {:
-	// listVar se trata de una clase que contiene un HashMap con pares de tipo y lista de variables que le pasamos al procedimiento. Cogeremos cada variable uno a uno e incluiremos en la tabla de símbolos.
+	// mapaVar se trata de una clase que contiene un HashMap con pares de tipo y lista de variables que le pasamos al procedimiento. Cogeremos cada variable uno a uno e incluiremos en la tabla de símbolos.
 	if(mapaVar != null){
 		// Obtenemos el ambito y la tabla de simbolos
 		ScopeIF scope = scopeManager.getCurrentScope();
@@ -483,7 +480,7 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id {:
 		while(it.hasNext()){
 			TypeIF next_tipo = it.next();
 			ArrayList<Selectorvalororeferencia> lista_variables = mapa.get(next_tipo);
-			for(int i = 0; i < lista_variables.size(); i++) { 
+			for(int i = 0; i < lista_variables.size(); i++) {
 			    Selectorvalororeferencia variable = lista_variables.get(i);
 				errorSiExisteSimbolo(variable.getId(), 0); //TODO la linea no esta definida aqui
 				SymbolParameter symbol = new SymbolParameter(scope, variable.getId(), next_tipo);
@@ -491,7 +488,7 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id {:
 			} 
 		}
 	}
-:} PDERECHO DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentencia listaSentencias   FINBLOQUESENTENCIAS DSENTENCIAS {:
+:} PDERECHO DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentencia listaSentencias FINBLOQUESENTENCIAS DSENTENCIAS {:
 	// Cerramos el ambito actual (current scope)
 	scopeManager.closeScope();
 	semanticErrorManager.semanticDebug("Se ha cerrado el ambito actual.");
@@ -544,9 +541,9 @@ funcion ::= DECLAREFUNCION IDEN:id {:
 	}
 :} PDERECHO DELIMFUNC tiporetornofuncion:tipo DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentenciaFuncion listaSentenciasFuncion FINBLOQUESENTENCIAS DSENTENCIAS {:
 	// Comprobar que exista el tipo de retorno. Para ello, si no lo contiene, lanzaremos un error.
-	if(!scopeManager.containsType(((Tipovector)tipo).getNombre_tipo())){
-		semanticErrorManager.semanticFatalError("Tipo " + ((Tipovector)tipo).getNombre_tipo() + " de retorno de funcion no existe, error.");
-	} //REVISAR - No se por que tengo que castear, parece ser algo de la propagacion. Ademas es posible que no sea necesario hacer esta comprobacion, porque ya tenemos el tipo en su sitio y cualquier fallo lo detectaria la sintaxis
+	if(!scopeManager.containsType(tipo.getNombre_tipo())){
+		semanticErrorManager.semanticFatalError("Tipo " + tipo.getNombre_tipo() + " de retorno de funcion no existe, error.");
+	} //es posible que no sea necesario hacer esta comprobacion, porque ya tenemos el tipo en su sitio y cualquier fallo lo detectaria la sintaxis
 
 	// Cerramos el ambito actual (current scope)
 	scopeManager.closeScope();
@@ -643,7 +640,7 @@ expresionlvl5 ::= PIZQUIERDO expresion PDERECHO {:
 
 // Acceso a vectores
 miembrovector::= IDEN:id CIZQUIERDO valorango CDERECHO {:
-	RESULT = new Valorango(id.getLexema().toUpperCase(), false, true);
+	RESULT = new Miembrovector(id.getLexema().toUpperCase());
 :};
 
 /*================================================*
