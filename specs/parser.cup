@@ -45,7 +45,7 @@ action code {:
 		}
 	}
 
-	// Metodo apra comprobar si existe un tipo
+	// Metodo para comprobar si existe un tipo
 	public void errorSiExisteTipo(String id, int linea){ 
 		if(scopeManager.containsType(id)){
 			semanticErrorManager.semanticFatalError("Simbolo " + id + " en la linea " + linea + " declarado anteriormente, error.");
@@ -144,11 +144,11 @@ non terminal defprincipal;
 non terminal Selectorvalororeferencia selectorvalororeferencia;
 
 
-non terminal expresion;
-non terminal expresionlvl2;
-non terminal expresionlvl3;
-non terminal expresionlvl4;
-non terminal expresionlvl5;
+non terminal Expresion expresion;
+non terminal Expresion expresionlvl2;
+non terminal Expresion expresionlvl3;
+non terminal Expresion expresionlvl4;
+non terminal Expresion expresionlvl5;
 
 
 
@@ -192,6 +192,8 @@ non terminal sentenciallamadafuncion;
 precedence left		PIZQUIERDO, PDERECHO, YLOGICA, MENORQUE, IGUALDAD, CIZQUIERDO, CDERECHO, SUMA ;
 precedence left PRODUCTO;
 precedence right	NOLOGICO;
+
+
 
 // Declaración de reglas de producción
 
@@ -281,6 +283,7 @@ deftipos ::=IDEN:id ASIGNACION DECLVECTOR CIZQUIERDO valorango:rangoInferior RAN
 	} else { // Si el tipo no estaba declarado anteriormente
 		
 		// Comprobamos que tanto el rango inferior como el rango superior sean constantes y obtenemos sus valores.
+
 		// Para ello, primero declaramos dos enteros auxiliares
 		int numInferior = 0;
 		int numSuperior = 0;
@@ -365,7 +368,7 @@ tipovariable ::= BOOLEANO {:
 	ScopeIF scope = scopeManager.getCurrentScope();
 
 	// Comprobamos si la tabla de tipos contiene el tipo.
-	if(scopeManager.containsType(id.getLexema().toUpperCase())){ //Si lo contiene, creamos el tipo
+	if(scopeManager.containsType(id.getLexema().toUpperCase())){ //Si lo contiene, creamos el no terminal tipovariable para seguir adelante
 		RESULT = new Tipovariable(scopeManager.searchType(id.getLexema().toUpperCase()), id.getLexema().toUpperCase());
 	} else { // Si no lo contiene, lanzamos error
 		semanticErrorManager.semanticFatalError("Tipo " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " no esta incluido en la tabla de tipos anteriormente, error.");
@@ -374,10 +377,10 @@ tipovariable ::= BOOLEANO {:
 
 selectorvalororeferencia ::=  PARAMETROVALOR IDEN:id {:
 	errorSiExisteSimbolo(id.getLexema().toUpperCase(), id.getLine());
-	RESULT = new Selectorvalororeferencia(id.getLexema().toUpperCase());
+	RESULT = new Selectorvalororeferencia(id.getLexema().toUpperCase(), false);
 :} | expresion:ex {:
-	RESULT = (Selectorvalororeferencia)ex; //ERROR no se porque no puedo quitar este casteo
-	//PENDIENTE de terminar
+	RESULT = new Selectorvalororeferencia(ex.getId(), true);
+	//TODO Pendiente de terminar, solo he contemplado la parte de IDEN, faltarian las demas expresiones
 :};
 
 defvariables ::= listavariables:listVariables DELIMFUNC tipovariable:tipo puntoycomaopcional defvariables:hmTipoVariable {:
@@ -405,17 +408,27 @@ seccionvariables ::= DECLVARIABLES defvariables:hmTipoVariables {:
 
 	HashMap<TypeIF, ArrayList<Selectorvalororeferencia>> mapa = hmTipoVariables.getVariablesDeUnTipo();
 
-	Iterator<TypeIF> it = mapa.keySet().iterator();
-		while(it.hasNext()){
-			TypeIF next_tipo = it.next();
-			ArrayList<Selectorvalororeferencia> lista_variables = mapa.get(next_tipo);
-			for(int i = 0; i < lista_variables.size(); i++) { 
-			    Selectorvalororeferencia variable = lista_variables.get(i);
-				errorSiExisteSimbolo(variable.getId(), 0); //TODO la linea no esta definida aqui
-				SymbolVariable symbol = new SymbolVariable(scope, variable.getId(), next_tipo);
-				symbolTable.addSymbol(symbol);
-			} 
-		}
+	Iterator<TypeIF> it = mapa.keySet().iterator(); //iterador del keyset de todos los tipos incluidos en el HashMap
+	while(it.hasNext()){ // vamos recorriendo cada tipo
+		TypeIF next_tipo = it.next(); // obtenemos el tipo que toca en esta iteración
+		ArrayList<Selectorvalororeferencia> lista_variables = mapa.get(next_tipo); // obtenemos la lista de Selectorvalororeferencia relacionada a ese tipo
+		for(int i = 0; i < lista_variables.size(); i++) {  // recorremos cada elemento de la lista de Selectorvalororeferencia
+			Selectorvalororeferencia variable = lista_variables.get(i); // obtenemos cada Selectorvalororeferencia
+			if(variable.getId() == null){ // Si es null, no es un IDEN por lo que lanzamos error
+				semanticErrorManager.semanticFatalError("Se ha detectado una notacion de declaracion de variable no autorizada. Asegurar que todas las variables sean declaradas con identificadores.");
+			}else{ // Si no es null, es un IDEN
+				if(variable.isPorValor()){ //comprobamos que es por valor				
+					errorSiExisteSimbolo(variable.getId(), 0); //TODO el numero de linea no esta definida aqui
+					SymbolVariable symbol = new SymbolVariable(scope, variable.getId(), next_tipo);
+					symbolTable.addSymbol(symbol);
+				}else{ // si no es por valor, lanzamos error
+					semanticErrorManager.semanticFatalError("No se puede declarar la variable " + variable.getId() + ", es por referencia.");
+			}
+			}
+			
+			
+		} 
+	}
 
 
 :}| epsilon  ;
@@ -578,13 +591,51 @@ defprincipal ::= COMIENZOPROGRAMA IDEN:id {:
  *================================================*/
 
 // Expresiones
-expresion ::=  expresion MENORQUE  expresion |  expresion IGUALDAD  expresion | IDEN:id {:
-	RESULT = new Selectorvalororeferencia(id.getLexema().toUpperCase());
-:} | llamadafuncion | CIERTO | FALSO | miembrovector | NUM | expresionlvl2;
-expresionlvl2 ::=  expresion SUMA expresion | expresionlvl3 ;
-expresionlvl3 ::=  expresion YLOGICA expresion |  expresion PRODUCTO expresion | expresionlvl4;
-expresionlvl4 ::= NOLOGICO  expresion | expresionlvl5 ;
-expresionlvl5 ::= PIZQUIERDO expresion PDERECHO | CIZQUIERDO expresion CDERECHO  ;
+expresion ::=  expresion MENORQUE  expresion {: //TODO todas las expresiones menos IDEN
+	RESULT = new Expresion();
+:} |  expresion IGUALDAD  expresion {:
+	RESULT = new Expresion();
+:} | IDEN:id {:
+	RESULT = new Expresion(id.getLexema().toUpperCase());
+:} | llamadafuncion {:
+	RESULT = new Expresion();
+:} | CIERTO {:
+	RESULT = new Expresion();
+:} | FALSO {:
+	RESULT = new Expresion();
+:} | miembrovector {:
+	RESULT = new Expresion();
+:} | NUM {:
+	RESULT = new Expresion();
+:} | expresionlvl2:ex {:
+	RESULT = ex;
+:};
+
+expresionlvl2 ::=  expresion SUMA expresion {:
+	RESULT = new Expresion();
+:} | expresionlvl3:ex {:
+	RESULT = ex;
+:} ;
+
+expresionlvl3 ::=  expresion YLOGICA expresion {:
+	RESULT = new Expresion();
+:} |  expresion PRODUCTO expresion {:
+	RESULT = new Expresion();
+:} | expresionlvl4:ex {:
+	RESULT = ex;
+:};
+
+expresionlvl4 ::= NOLOGICO  expresion {:
+	RESULT = new Expresion();
+:} | expresionlvl5:ex {:
+	RESULT = ex;
+:} ;
+
+expresionlvl5 ::= PIZQUIERDO expresion PDERECHO {:
+	RESULT = new Expresion();
+:} | CIZQUIERDO expresion CDERECHO {:
+	RESULT = new Expresion();
+:} ;
 
 /*================================================*
  *================ACCESO A VECTORES===============*
