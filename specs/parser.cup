@@ -153,7 +153,7 @@ non terminal expresionlvl5;
 
 
 
-non terminal miembrovector;
+non terminal Valorango miembrovector;
 non terminal procedimiento;
 non terminal funcion;
 non terminal selectorpof;
@@ -279,9 +279,54 @@ deftipos ::=IDEN:id ASIGNACION DECLVECTOR CIZQUIERDO valorango:rangoInferior RAN
 	if(scopeManager.containsType(id.getLexema().toUpperCase())){ 
 		semanticErrorManager.semanticFatalError("Tipo " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " incluido en la tabla de tipos anteriormente, error.");
 	} else { // Si el tipo no estaba declarado anteriormente
-		if(rangoSuperior.getNum() > rangoInferior.getNum()){ // Solo crearemos el tipo si el rango superior es mayor que el inferior
+		
+		// Comprobamos que tanto el rango inferior como el rango superior sean constantes y obtenemos sus valores.
+		// Para ello, primero declaramos dos enteros auxiliares
+		int numInferior = 0;
+		int numSuperior = 0;
+
+		// Comprobación para el rango inferior
+		if(rangoInferior.isNum()){ // Si es un numero constante, cogemos directamente su valor
+			numInferior = rangoInferior.getNum();
+		}else if (rangoInferior.isIden()){ // Si es un identificador
+			// Miramos si la tabla de simbolos contiene el simbolo, nos esperamos que lo haga. 
+			if(scopeManager.containsSymbol(rangoInferior.getId())){
+				SymbolIF symbol = scopeManager.searchSymbol(rangoInferior.getId()); // Obtenemos el simbolo
+				if(symbol instanceof SymbolConstant && symbol.getType().getName().equals("ENTERO")){ //El simbolo tiene que ser constante y entero
+					numInferior = ((SymbolConstant)symbol).getNum_value(); // Desde la propia tabla de simbolos obtenemos el valor numerico de este simbolo
+				}else {
+				semanticErrorManager.semanticFatalError("El simbolo "+rangoInferior.getId()+" no corresponde a una constante de tipo entero."); 
+				}
+			} else {
+				semanticErrorManager.semanticFatalError("El simbolo "+rangoInferior.getId()+" no esta contenido en la tabla de simbolos."); 
+			}
+		}else if (rangoInferior.isMiembrovector()){ // Si es un miembro de vector, no puede ser utilizado en la definicion de tipos
+			semanticErrorManager.semanticFatalError("El simbolo "+rangoInferior.getId()+" no corresponde a una constante de tipo entero."); 
+		}
+
+		// Comprobacion para el rango superior
+		if(rangoSuperior.isNum()){ // Si es un numero constante, cogemos directamente su valor
+			numSuperior = rangoSuperior.getNum();
+		}else if (rangoSuperior.isIden()){ // Si es un identificador
+			// Miramos si la tabla de simbolos contiene el simbolo, nos esperamos que lo haga. 
+			if(scopeManager.containsSymbol(rangoSuperior.getId())){
+				SymbolIF symbol = scopeManager.searchSymbol(rangoSuperior.getId()); // Obtenemos el simbolo
+				if(symbol instanceof SymbolConstant && symbol.getType().getName().equals("ENTERO")){ //El simbolo tiene que ser constante y entero
+					numSuperior = ((SymbolConstant)symbol).getNum_value(); // Desde la propia tabla de simbolos obtenemos el valor numerico de este simbolo
+				}else {
+				semanticErrorManager.semanticFatalError("El simbolo "+rangoSuperior.getId()+" no corresponde a una constante de tipo entero."); 
+				}
+			} else {
+				semanticErrorManager.semanticFatalError("El simbolo "+rangoSuperior.getId()+" no esta contenido en la tabla de simbolos."); 
+			}
+		}else if (rangoSuperior.isMiembrovector()){ // Si es un miembro de vector, no puede ser utilizado en la definicion de tipos
+			semanticErrorManager.semanticFatalError("El simbolo "+rangoSuperior.getId()+" no corresponde a una constante de tipo entero."); 
+		}
+
+		// Ahora que hemos obtenido los numeros, procedemos a crear el tipo
+		if(numSuperior > numInferior){ // Solo crearemos el tipo si el rango superior es mayor que el inferior
 			// Creamos el tipo
-			TypeIF t_vector_nuevo = new TypeArray(scope, id.getLexema().toUpperCase(), rangoInferior.getNum(), rangoSuperior.getNum(), tipov);
+			TypeIF t_vector_nuevo = new TypeArray(scope, id.getLexema().toUpperCase(), numInferior, numSuperior, tipov);
 			tablaTipos.addType(t_vector_nuevo); // Introducimos el tipo en la tabla de tipos
 			semanticErrorManager.semanticDebug("Tipo " + id.getLexema().toUpperCase() + " con [" + ((TypeArray)t_vector_nuevo).imprimir() + "] aniadido a la tabla de tipos.");		
 		} else { // Emitimos error si los rangos no encajan
@@ -299,20 +344,9 @@ tipovector ::=BOOLEANO {:
 valorango ::= NUM:valor_num {:
 	RESULT = new Valorango(Integer.parseInt(valor_num.getLexema().toUpperCase()));
 :} | IDEN:id {:
-	// Obtenemos el ambito
-	ScopeIF scope = scopeManager.getCurrentScope();
-	
-	// Miramos si la tabla de simbolos contiene el simbolo, nos esperamos que lo haga. 
-	if(scopeManager.containsSymbol(id.getLexema().toUpperCase())){
-		SymbolIF symbol = scopeManager.searchSymbol(id.getLexema().toUpperCase());
-		if(symbol instanceof SymbolConstant && symbol.getType().getName().equals("ENTERO")){
-			RESULT = new Valorango(((SymbolConstant)symbol).getNum_value()); // Desde la propia tabla de simbolos obtenemos el valor numerico de este simbolo para crear el valorango
-		}
-	}else{
-		semanticErrorManager.semanticFatalError("El simbolo "+id.getLexema().toUpperCase()+" no esta contenido en la tabla de simbolos o no corresponde a una constante de tipo entero."); 
-	}
-:} | miembrovector {:
-	// PENDIENTE
+	RESULT = new Valorango(id.getLexema().toUpperCase(), true, false);
+:} | miembrovector:m {:
+	RESULT = m;
 :};
 
 secciontipos ::= COMIENZODECLTIPOS deftipos | epsilon; 
@@ -557,7 +591,9 @@ expresionlvl5 ::= PIZQUIERDO expresion PDERECHO | CIZQUIERDO expresion CDERECHO 
  *================================================*/
 
 // Acceso a vectores
-miembrovector::= IDEN CIZQUIERDO valorango CDERECHO;
+miembrovector::= IDEN:id CIZQUIERDO valorango CDERECHO {:
+	RESULT = new Valorango(id.getLexema().toUpperCase(), false, true);
+:};
 
 /*================================================*
  *============SENTENCIAS DE ASIGNACION============*
