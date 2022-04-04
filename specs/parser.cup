@@ -384,12 +384,12 @@ selectorvalororeferencia ::=  PARAMETROVALOR IDEN:id {:
 	// Volver cuando vaya a hacer las llamadas a las funciones.
 :};
 
-defvariables ::= listavariables:listVariables DELIMFUNC tipovariable:tipo puntoycomaopcional defvariables:hmTipoVariable {:
-	if(hmTipoVariable == null){ // Si el hashmap de Tipo-ListaVariables esta vacio
+defvariables ::= listavariables:listVariables DELIMFUNC tipovariable:tipo puntoycomaopcional defvariables:listVariable {:
+	if(listVariable == null){ // Si el hashmap de Tipo-ListaVariables esta vacio
 		RESULT = new Defvariables(tipo.getTipo(), (ArrayList<Selectorvalororeferencia>)(listVariables.getListaV()));
 	} else { // Si el hashmap de Tipo-ListaVariables contiene elementos
-		hmTipoVariable.putParTipoVariable(tipo.getTipo(), (ArrayList<Selectorvalororeferencia>)(listVariables.getListaV()));
-		RESULT = hmTipoVariable;
+		listVariable.putParTipoVariable(tipo.getTipo(), (ArrayList<Selectorvalororeferencia>)(listVariables.getListaV()));
+		RESULT = listVariable;
 	}
 :} | epsilon; 
 
@@ -400,34 +400,31 @@ listavariables ::= selectorvalororeferencia:selector DIDENTIFICADORES listavaria
 	RESULT = new Listavariables(selector);
 :} | epsilon ;
 
-seccionvariables ::= DECLVARIABLES defvariables:hmTipoVariables {: 
+seccionvariables ::= DECLVARIABLES defvariables:listVariables {: 
 	// Obtenemos el ambito y la tabla de simbolos
 	ScopeIF scope = scopeManager.getCurrentScope();
 	SymbolTableIF symbolTable = scope.getSymbolTable();
 
-	semanticErrorManager.semanticDebug("Variables creadas con su correspondiente tipo: "+hmTipoVariables.toString());
+	semanticErrorManager.semanticDebug("Variables creadas con su correspondiente tipo: "+listVariables.toString());
 
-	HashMap<TypeIF, ArrayList<Selectorvalororeferencia>> mapa = hmTipoVariables.getVariablesDeUnTipo();
+	ArrayList<Selectorvalororeferencia> listaAux = listVariables.getListaVariablesConTipo();
 
-	Iterator<TypeIF> it = mapa.keySet().iterator(); //iterador del keyset de todos los tipos incluidos en el HashMap
-	while(it.hasNext()){ // vamos recorriendo cada tipo
-		TypeIF next_tipo = it.next(); // obtenemos el tipo que toca en esta iteración
-		ArrayList<Selectorvalororeferencia> lista_variables = mapa.get(next_tipo); // obtenemos la lista de Selectorvalororeferencia relacionada a ese tipo
-		for(int i = 0; i < lista_variables.size(); i++) {  // recorremos cada elemento de la lista de Selectorvalororeferencia
-			Selectorvalororeferencia variable = lista_variables.get(i); // obtenemos cada Selectorvalororeferencia
-			if(variable.getId() == null){ // Si es null, no es un IDEN por lo que lanzamos error
-				semanticErrorManager.semanticFatalError("Se ha detectado una notacion de declaracion de variable no autorizada. Asegurar que todas las variables sean declaradas con identificadores.");
-			}else{ // Si no es null, es un IDEN
-				if(variable.isPorValor()){ //comprobamos que es por valor				
-					errorSiExisteSimbolo(variable.getId(), 0); //TODO el numero de linea no esta definida aqui
-					SymbolVariable symbol = new SymbolVariable(scope, variable.getId(), next_tipo);
-					symbolTable.addSymbol(symbol);
-				}else{ // si no es por valor, lanzamos error
-					semanticErrorManager.semanticFatalError("No se puede declarar la variable " + variable.getId() + ", es por referencia.");
-				}
+	// vamos recorriendo cada elemento de la lista de Selectorvalororeferencia
+	for(int x = 0; x < listaAux.size(); x++){
+		Selectorvalororeferencia variable = listaAux.get(x); // obtenemos cada Selectorvalororeferencia
+		if(variable.getId() == null){ // Si es null, no es un IDEN por lo que lanzamos error
+			semanticErrorManager.semanticFatalError("Se ha detectado una notacion de declaracion de variable no autorizada. Asegurar que todas las variables sean declaradas con identificadores.");
+		}else{ // Si no es null, es un IDEN
+			if(variable.isPorValor()){ //comprobamos que es por valor				
+				errorSiExisteSimbolo(variable.getId(), 0); //TODO el numero de linea no esta definida aqui
+				SymbolVariable symbol = new SymbolVariable(scope, variable.getId(), variable.getTipo());
+				symbolTable.addSymbol(symbol);
+			}else{ // si no es por valor, lanzamos error
+				semanticErrorManager.semanticFatalError("No se puede declarar la variable " + variable.getId() + ", es por referencia.");
 			}
-		} 
+		}
 	}
+
 :}| epsilon  ;
 
 puntoycomaopcional ::= DSENTENCIAS | epsilon;
@@ -442,7 +439,7 @@ tiporetornofuncion ::= tipovector:t {:
 	RESULT = t;
 :} ; 
 
-procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id PIZQUIERDO defvariables:mapaVar {:
+procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id PIZQUIERDO defvariables:listaVar {:
 	// Obtenemos el ambito, la tabla de tipos y la tabla de simbolos
 	ScopeIF scope = scopeManager.getCurrentScope();
 	SymbolTableIF symbolTable = scope.getSymbolTable();
@@ -464,25 +461,20 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id PIZQUIERDO defvariables:mapaVar 
 	semanticErrorManager.semanticDebug("El nombre del nuevo ambito es: " + scope.getName() + " con el nivel: " + scope.getLevel());	
 	
 
-	// mapaVar se trata de una clase que contiene un HashMap con pares de tipo y lista de variables que le pasamos al procedimiento. Cogeremos cada variable uno a uno e incluiremos en la tabla de símbolos.
-	if(mapaVar != null){
+	// listaVar se trata de una clase que contiene un Arraylist<Selectorvalororeferencia> que le pasamos al procedimiento. Cogeremos cada variable uno a uno e incluiremos en la tabla de símbolos.
+	if(listaVar != null){
 		// Obtenemos la tabla de simbolos
 		symbolTable = scope.getSymbolTable();
 
-		// Primero recuperamos el HashMap
-		HashMap<TypeIF, ArrayList<Selectorvalororeferencia>> mapa = mapaVar.getVariablesDeUnTipo();
+		// Primero recuperamos el ArrayList
+		ArrayList<Selectorvalororeferencia> listaAux = listaVar.getListaVariablesConTipo();
 
-		// Creamos un iterador para recorrer el HashMap e introducimos los variables en la tabla de simbolos
-		Iterator<TypeIF> it = mapa.keySet().iterator();
-		while(it.hasNext()){
-			TypeIF next_tipo = it.next();
-			ArrayList<Selectorvalororeferencia> lista_variables = mapa.get(next_tipo);
-			for(int i = 0; i < lista_variables.size(); i++) {
-			    Selectorvalororeferencia variable = lista_variables.get(i);
-				errorSiExisteSimbolo(variable.getId(), 0); //TODO la linea no esta definida aqui
-				SymbolParameter symbol = new SymbolParameter(scope, variable.getId(), next_tipo);
-				symbolTable.addSymbol(symbol);
-			} 
+		// Recorremos la lista e introducimos las variables en la tabla de simbolos
+		for(int x = 0; x < listaAux.size(); x++){
+			Selectorvalororeferencia variable = listaAux.get(x);
+			errorSiExisteSimbolo(variable.getId(), 0); //TODO la linea no esta definida aqui
+			SymbolParameter symbol = new SymbolParameter(scope, variable.getId(), variable.getTipo());
+			symbolTable.addSymbol(symbol);
 		}
 	}
 :} PDERECHO DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentencia listaSentencias FINBLOQUESENTENCIAS DSENTENCIAS {:
@@ -491,7 +483,7 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id PIZQUIERDO defvariables:mapaVar 
 	semanticErrorManager.semanticDebug("Se ha cerrado el ambito actual.");
 :};
 
-funcion ::= DECLAREFUNCION IDEN:id PIZQUIERDO defvariables:mapaVar PDERECHO DELIMFUNC tiporetornofuncion:tipo {:
+funcion ::= DECLAREFUNCION IDEN:id PIZQUIERDO defvariables:listaVar PDERECHO DELIMFUNC tiporetornofuncion:tipo {:
 	// Obtenemos el ambito, la tabla de tipos y la tabla de simbolos
 	ScopeIF scope = scopeManager.getCurrentScope();
 	SymbolTableIF symbolTable = scope.getSymbolTable();
@@ -502,9 +494,9 @@ funcion ::= DECLAREFUNCION IDEN:id PIZQUIERDO defvariables:mapaVar PDERECHO DELI
 	errorSiExisteTipo(id.getLexema().toUpperCase(), id.getLine());
 	
 	// Creamos el tipo y el simbolo de la funcion
-	TypeFunction tf = new TypeFunction(scope, id.getLexema().toUpperCase(), tipo.getNombre_tipo());
+	TypeFunction tf = new TypeFunction(scope, id.getLexema().toUpperCase(), tipo.getNombre_tipo(), listaVar.getListaVariablesConTipo());
 	typeTable.addType(id.getLexema().toUpperCase(), tf);
-	SymbolFunction sf = new SymbolFunction(scope, id.getLexema().toUpperCase(), tf, tipo.getNombre_tipo());
+	SymbolFunction sf = new SymbolFunction(scope, id.getLexema().toUpperCase(), tf, tipo.getNombre_tipo(), listaVar.getListaVariablesConTipo());
 	symbolTable.addSymbol(id.getLexema().toUpperCase(), sf);
 
 	// Creamos el ambito con el nombre de la funcion y emitimos el mensaje de comprobación
@@ -513,27 +505,21 @@ funcion ::= DECLAREFUNCION IDEN:id PIZQUIERDO defvariables:mapaVar PDERECHO DELI
 	semanticErrorManager.semanticDebug("El nombre del nuevo ambito es: " + scope.getName() + " con el nivel: " + scope.getLevel());
 	
 
-	// listVar se trata de una clase que contiene un HashMap con pares de tipo y lista de variables que le pasamos a la funcion. Cogeremos cada variable uno a uno e incluiremos en la tabla de símbolos.
-	if(mapaVar != null){
+	// listVar se trata de una clase que contiene un ArrayList de variables que le pasamos a la funcion. Cogeremos cada variable uno a uno e incluiremos en la tabla de símbolos.
+	if(listaVar != null){
 		// Obtenemos la tabla de simbolos
 		symbolTable = scope.getSymbolTable();
 
-		// Primero recuperamos el HashMap
-		HashMap<TypeIF, ArrayList<Selectorvalororeferencia>> mapa = mapaVar.getVariablesDeUnTipo();
+		// Primero recuperamos el ArrayList
+		ArrayList<Selectorvalororeferencia> listaAux = listaVar.getListaVariablesConTipo();
 
-		// Creamos un iterador para recorrer el HashMap e introducimos los variables en la tabla de simbolos
-		Iterator<TypeIF> it = mapa.keySet().iterator();
-		while(it.hasNext()){
-			TypeIF next_tipo = it.next();
-			ArrayList<Selectorvalororeferencia> lista_variables = mapa.get(next_tipo);
-			for(int i = 0; i < lista_variables.size(); i++) { 
-			    Selectorvalororeferencia variable = lista_variables.get(i);
-				errorSiExisteSimbolo(variable.getId(), 0); //TODO la linea no esta definida aqui
-				SymbolParameter symbol = new SymbolParameter(scope, variable.getId(), next_tipo);
-				symbolTable.addSymbol(symbol);
-			} 
+		// Recorremos la lista e introducimos las variables en la tabla de simbolos
+		for(int x = 0; x < listaAux.size(); x++){
+			Selectorvalororeferencia variable = listaAux.get(x);
+			errorSiExisteSimbolo(variable.getId(), 0); //TODO la linea no esta definida aqui
+			SymbolParameter symbol = new SymbolParameter(scope, variable.getId(), variable.getTipo());
+			symbolTable.addSymbol(symbol);
 		}
-
 	}
 
 	// Comprobar que exista el tipo de retorno. Para ello, si no lo contiene, lanzaremos un error.
