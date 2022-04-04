@@ -442,7 +442,7 @@ tiporetornofuncion ::= tipovector:t {:
 	RESULT = t;
 :} ; 
 
-procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id {:
+procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id PIZQUIERDO defvariables:mapaVar {:
 	// Obtenemos el ambito, la tabla de tipos y la tabla de simbolos
 	ScopeIF scope = scopeManager.getCurrentScope();
 	SymbolTableIF symbolTable = scope.getSymbolTable();
@@ -462,15 +462,12 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id {:
 	scopeManager.openScope(id.getLexema().toUpperCase());
 	scope = scopeManager.getCurrentScope();
 	semanticErrorManager.semanticDebug("El nombre del nuevo ambito es: " + scope.getName() + " con el nivel: " + scope.getLevel());	
-
-
 	
-:} PIZQUIERDO defvariables:mapaVar {:
+
 	// mapaVar se trata de una clase que contiene un HashMap con pares de tipo y lista de variables que le pasamos al procedimiento. Cogeremos cada variable uno a uno e incluiremos en la tabla de símbolos.
 	if(mapaVar != null){
-		// Obtenemos el ambito y la tabla de simbolos
-		ScopeIF scope = scopeManager.getCurrentScope();
-		SymbolTableIF symbolTable = scope.getSymbolTable();
+		// Obtenemos la tabla de simbolos
+		symbolTable = scope.getSymbolTable();
 
 		// Primero recuperamos el HashMap
 		HashMap<TypeIF, ArrayList<Selectorvalororeferencia>> mapa = mapaVar.getVariablesDeUnTipo();
@@ -494,7 +491,7 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id {:
 	semanticErrorManager.semanticDebug("Se ha cerrado el ambito actual.");
 :};
 
-funcion ::= DECLAREFUNCION IDEN:id {:
+funcion ::= DECLAREFUNCION IDEN:id PIZQUIERDO defvariables:mapaVar PDERECHO DELIMFUNC tiporetornofuncion:tipo {:
 	// Obtenemos el ambito, la tabla de tipos y la tabla de simbolos
 	ScopeIF scope = scopeManager.getCurrentScope();
 	SymbolTableIF symbolTable = scope.getSymbolTable();
@@ -505,9 +502,9 @@ funcion ::= DECLAREFUNCION IDEN:id {:
 	errorSiExisteTipo(id.getLexema().toUpperCase(), id.getLine());
 	
 	// Creamos el tipo y el simbolo de la funcion
-	TypeFunction tf = new TypeFunction(scope, id.getLexema().toUpperCase());
+	TypeFunction tf = new TypeFunction(scope, id.getLexema().toUpperCase(), tipo.getNombre_tipo());
 	typeTable.addType(id.getLexema().toUpperCase(), tf);
-	SymbolFunction sf = new SymbolFunction(scope, id.getLexema().toUpperCase(), tf);
+	SymbolFunction sf = new SymbolFunction(scope, id.getLexema().toUpperCase(), tf, tipo.getNombre_tipo());
 	symbolTable.addSymbol(id.getLexema().toUpperCase(), sf);
 
 	// Creamos el ambito con el nombre de la funcion y emitimos el mensaje de comprobación
@@ -515,12 +512,11 @@ funcion ::= DECLAREFUNCION IDEN:id {:
 	scope = scopeManager.getCurrentScope();
 	semanticErrorManager.semanticDebug("El nombre del nuevo ambito es: " + scope.getName() + " con el nivel: " + scope.getLevel());
 	
-:} PIZQUIERDO defvariables:mapaVar {:
+
 	// listVar se trata de una clase que contiene un HashMap con pares de tipo y lista de variables que le pasamos a la funcion. Cogeremos cada variable uno a uno e incluiremos en la tabla de símbolos.
 	if(mapaVar != null){
-		// Obtenemos el ambito y la tabla de simbolos
-		ScopeIF scope = scopeManager.getCurrentScope();
-		SymbolTableIF symbolTable = scope.getSymbolTable();
+		// Obtenemos la tabla de simbolos
+		symbolTable = scope.getSymbolTable();
 
 		// Primero recuperamos el HashMap
 		HashMap<TypeIF, ArrayList<Selectorvalororeferencia>> mapa = mapaVar.getVariablesDeUnTipo();
@@ -539,12 +535,13 @@ funcion ::= DECLAREFUNCION IDEN:id {:
 		}
 
 	}
-:} PDERECHO DELIMFUNC tiporetornofuncion:tipo DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentenciaFuncion listaSentenciasFuncion FINBLOQUESENTENCIAS DSENTENCIAS {:
+
 	// Comprobar que exista el tipo de retorno. Para ello, si no lo contiene, lanzaremos un error.
 	if(!scopeManager.containsType(tipo.getNombre_tipo())){
 		semanticErrorManager.semanticFatalError("Tipo " + tipo.getNombre_tipo() + " de retorno de funcion no existe, error.");
 	} //es posible que no sea necesario hacer esta comprobacion, porque ya tenemos el tipo en su sitio y cualquier fallo lo detectaria la sintaxis
 
+:} DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentenciaFuncion listaSentenciasFuncion FINBLOQUESENTENCIAS DSENTENCIAS {:
 	// Cerramos el ambito actual (current scope)
 	scopeManager.closeScope();
 	semanticErrorManager.semanticDebug("Se ha cerrado el ambito actual.");
