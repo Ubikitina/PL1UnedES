@@ -8,12 +8,7 @@ import es.uned.lsi.compiler.semantic.type.TypeIF;
  * Class for SymbolVariable.
  */
 
-// TODO: Student work
-//       Include properties to characterize parameters
-
-public class SymbolParameter
-    extends SymbolBase
-{  
+public class SymbolParameter extends SymbolBase {  
    
     /**
      * Constructor for SymbolParameter.
@@ -21,10 +16,9 @@ public class SymbolParameter
      * @param name The symbol name.
      * @param type The symbol type.
      */
-    public SymbolParameter (ScopeIF scope, 
-                           String name,
-                           TypeIF type)
-    {
+    public SymbolParameter (ScopeIF scope, String name, TypeIF type) {
         super (scope, name, type);
-    } 
+    }
+    
+    
 }

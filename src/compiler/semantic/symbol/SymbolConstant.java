@@ -8,12 +8,7 @@ import es.uned.lsi.compiler.semantic.type.TypeIF;
  * Class for SymbolConstant.
  */
 
-// TODO: Student work
-//       Include properties to characterize constants
-
-public class SymbolConstant
-    extends SymbolBase
-{
+public class SymbolConstant extends SymbolBase {
 	
 	private int num_value;
 	private boolean bool_value;
@@ -24,10 +19,7 @@ public class SymbolConstant
      * @param name The symbol name.
      * @param type The symbol type.
      */
-    public SymbolConstant (ScopeIF scope,
-                           String name,
-                           TypeIF type)
-    {
+    public SymbolConstant (ScopeIF scope, String name, TypeIF type) {
         super (scope, name, type);
     } 
     

@@ -8,9 +8,9 @@ import es.uned.lsi.compiler.semantic.type.TypeIF;
  */
 
 
-public class SymbolFunction
-    extends SymbolProcedure
-{
+public class SymbolFunction extends SymbolProcedure {
+	
+	private String tipoRetorno;
       
     /**
      * Constructor for SymbolFunction.
@@ -18,10 +18,15 @@ public class SymbolFunction
      * @param name The symbol name.
      * @param type The symbol type.
      */
-    public SymbolFunction (ScopeIF scope, 
-                           String name,
-                           TypeIF type)
-    {
+    public SymbolFunction (ScopeIF scope, String name, TypeIF type, String tipoRetorno) {
         super (scope, name, type);
-    } 
+        this.tipoRetorno = tipoRetorno;
+    }
+
+    /*Getter para el tipoRetorno*/
+	public String getTipoRetorno() {
+		return tipoRetorno;
+	}
+
+	
 }
