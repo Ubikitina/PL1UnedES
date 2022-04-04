@@ -1,11 +1,7 @@
 package compiler.syntax.nonTerminal;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map.Entry;
-
 import es.uned.lsi.compiler.semantic.type.TypeIF;
 
 public class Defvariables extends NonTerminal {

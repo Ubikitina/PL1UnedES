@@ -1,11 +1,20 @@
 package compiler.syntax.nonTerminal;
 
 public class Miembrovector extends NonTerminal {
+	
+	private String id;
 
-	/*Constructor vacío*/
-	public Miembrovector() {
+	/*Constructor using id*/
+	public Miembrovector(String id) {
 		super();
-		// TODO Auto-generated constructor stub
+		this.id = id;
 	}
+
+	/*Getter for id*/
+	public String getId() {
+		return id;
+	}
+	
+	
 
 }
