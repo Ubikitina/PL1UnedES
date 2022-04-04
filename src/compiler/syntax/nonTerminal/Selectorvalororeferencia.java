@@ -1,9 +1,14 @@
 package compiler.syntax.nonTerminal;
 
+import es.uned.lsi.compiler.semantic.type.TypeIF;
+
 public class Selectorvalororeferencia extends NonTerminal {
 	
 	private String id;
 	private boolean esPorValor;
+	private TypeIF tipo;
+
+	
 
 	/*Constructor vacio*/
 	public Selectorvalororeferencia() {
@@ -28,6 +33,17 @@ public class Selectorvalororeferencia extends NonTerminal {
 		return esPorValor;
 	}
 
+	/*Getter para tipo*/
+	public TypeIF getTipo() {
+		return tipo;
+	}
+
+	/*Setter para tipo*/
+	public void setTipo(TypeIF tipo) {
+		this.tipo = tipo;
+	}
+	
+	
 	@Override
 	public String toString() {
 		return "Selectorvalororeferencia [id=" + id + ", esPorValor=" + esPorValor + "]";

@@ -1,38 +1,51 @@
 package compiler.syntax.nonTerminal;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import es.uned.lsi.compiler.semantic.type.TypeIF;
 
 public class Defvariables extends NonTerminal {
 	
-	HashMap<TypeIF, ArrayList<Selectorvalororeferencia>> variablesDeUnTipo;
+	ArrayList<Selectorvalororeferencia> listaVariablesConTipo;
 	
 	/*Constructor vacio*/
 	public Defvariables() {
 		super();
-		variablesDeUnTipo = new HashMap<TypeIF, ArrayList<Selectorvalororeferencia>>();
+		listaVariablesConTipo = new ArrayList<Selectorvalororeferencia>();
 	}
 	
 	/*Constructor pasandole un tipo y una lista de variables de ese tipo*/
 	public Defvariables(TypeIF t, ArrayList<Selectorvalororeferencia> l) {
 		super();
-		variablesDeUnTipo = new HashMap<TypeIF, ArrayList<Selectorvalororeferencia>>();
-		variablesDeUnTipo.put(t, l);
+		
+		listaVariablesConTipo = new ArrayList<Selectorvalororeferencia>();
+		ArrayList<Selectorvalororeferencia> listaAux = l;
+		// Recorro cada elemento de l añadiendo el tipo t
+		for (int x = 0; x < listaAux.size(); x++) {
+			Selectorvalororeferencia sl = listaAux.get(x);
+			sl.setTipo(t);
+			listaAux.set(x, sl);
+		}
+		listaVariablesConTipo = listaAux; // asigno el arraylist editado a la lista de variables con tipo
 	}
 	
+	/*Metodo para añadir pares de tipo y variable a una lista ya existente*/
 	public void putParTipoVariable(TypeIF t, ArrayList<Selectorvalororeferencia> l) {
-		if(variablesDeUnTipo.containsKey(t)) {
-			ArrayList<Selectorvalororeferencia> aux = variablesDeUnTipo.get(t);
-			aux.addAll(l);
-			variablesDeUnTipo.put(t, aux);
-		}else {
-			variablesDeUnTipo.put(t, l);
-		}		
+		
+		// Primero recorro cada elemento de l añadiendo el tipo t
+		ArrayList<Selectorvalororeferencia> listaAux = l;
+		for (int x = 0; x < listaAux.size(); x++) {
+			Selectorvalororeferencia sl = listaAux.get(x);
+			sl.setTipo(t);
+			listaAux.set(x, sl);
+		}
+		// Ahora añado la lista con tipos a la lista global
+		listaVariablesConTipo.addAll(listaAux);
 	}
 
-	public HashMap<TypeIF, ArrayList<Selectorvalororeferencia>> getVariablesDeUnTipo() {
-		return variablesDeUnTipo;
+	
+	/*Getter del arraylist*/
+	public ArrayList<Selectorvalororeferencia> getListaVariablesConTipo() {
+		return listaVariablesConTipo;
 	}
 
 	@Override
@@ -50,7 +63,7 @@ public class Defvariables extends NonTerminal {
 			} 
 			//aqui
 		}*/
-		return "Defvariables [variablesDeUnTipo=" + variablesDeUnTipo + "]";
+		return "Defvariables [listaVariablesConTipo="+ listaVariablesConTipo +"]";
 	}
 	
 	

@@ -1,5 +1,8 @@
 package compiler.semantic.type;
 
+import java.util.ArrayList;
+
+import compiler.syntax.nonTerminal.Selectorvalororeferencia;
 import es.uned.lsi.compiler.semantic.ScopeIF;
 import es.uned.lsi.compiler.semantic.type.TypeBase;
 
@@ -8,15 +11,13 @@ import es.uned.lsi.compiler.semantic.type.TypeBase;
  */
 
 
-public class TypeProcedure
-    extends TypeBase
-{   
+public class TypeProcedure extends TypeBase {
+	
    /**
      * Constructor for TypeProcedure.
      * @param scope The declaration scope.
      */
-    public TypeProcedure (ScopeIF scope)
-    {
+    public TypeProcedure (ScopeIF scope) {
         super (scope);
     }
 
@@ -25,8 +26,7 @@ public class TypeProcedure
      * @param scope The declaration scope
      * @param name The name of the procedure.
      */
-    public TypeProcedure (ScopeIF scope, String name)
-    {
+    public TypeProcedure (ScopeIF scope, String name) {
         super (scope, name);
     }
     

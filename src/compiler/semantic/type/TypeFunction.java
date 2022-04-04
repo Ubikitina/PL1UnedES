@@ -1,5 +1,8 @@
 package compiler.semantic.type;
 
+import java.util.ArrayList;
+
+import compiler.syntax.nonTerminal.Selectorvalororeferencia;
 import es.uned.lsi.compiler.semantic.ScopeIF;
 
 /**
@@ -9,6 +12,7 @@ import es.uned.lsi.compiler.semantic.ScopeIF;
 public class TypeFunction extends TypeProcedure {   
 	
 	private String tipoRetorno;
+	private ArrayList<Selectorvalororeferencia> listaParametros;
     
     /**
      * Constructor for TypeFunction.
@@ -23,9 +27,10 @@ public class TypeFunction extends TypeProcedure {
      * @param scope The declaration scope
      * @param name The name of the function.
      */
-    public TypeFunction (ScopeIF scope, String name, String tipoRetorno) {
+    public TypeFunction (ScopeIF scope, String name, String tipoRetorno, ArrayList<Selectorvalororeferencia> listaParametros) {
         super (scope, name);
         this.tipoRetorno = tipoRetorno;
+        this.listaParametros = listaParametros;
     }
     
     /**
@@ -41,5 +46,10 @@ public class TypeFunction extends TypeProcedure {
     /*Getter para el tipoRetorno*/
 	public String getTipoRetorno() {
 		return tipoRetorno;
+	}
+	
+	/*Getter para la lista de parametros*/
+	public ArrayList<Selectorvalororeferencia> getListaParametros() {
+		return listaParametros;
 	}
 }
