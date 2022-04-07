@@ -451,8 +451,10 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id PIZQUIERDO defvariables:listaVar
 	
 	// Creamos el tipo y el simbolo del procedimiento
 	TypeProcedure tp = new TypeProcedure(scope, id.getLexema().toUpperCase());
+	tp.setListaParametros(listaVar.getListaVariablesConTipo());
 	typeTable.addType(id.getLexema().toUpperCase(), tp);
 	SymbolProcedure sp = new SymbolProcedure(scope, id.getLexema().toUpperCase(), tp);
+	sp.setListaParametros(listaVar.getListaVariablesConTipo());
 	symbolTable.addSymbol(id.getLexema().toUpperCase(), sp);
 
 	// Creamos el ambito con el nombre del procedimiento y emitimos el mensaje de comprobación
