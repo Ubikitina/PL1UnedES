@@ -26,6 +26,7 @@ public class TypeFunction extends TypeProcedure {
      * Constructor for TypeFunction.
      * @param scope The declaration scope
      * @param name The name of the function.
+     * @param listaParametros List of parameters on the functions header
      */
     public TypeFunction (ScopeIF scope, String name, String tipoRetorno, ArrayList<Selectorvalororeferencia> listaParametros) {
         super (scope, name);

@@ -13,6 +13,8 @@ import es.uned.lsi.compiler.semantic.type.TypeBase;
 
 public class TypeProcedure extends TypeBase {
 	
+	private ArrayList<Selectorvalororeferencia> listaParametros;
+	
    /**
      * Constructor for TypeProcedure.
      * @param scope The declaration scope.
@@ -30,13 +32,18 @@ public class TypeProcedure extends TypeBase {
         super (scope, name);
     }
     
-    /**
+    
+    /*Setter para lista de parametros*/
+    public void setListaParametros(ArrayList<Selectorvalororeferencia> listaParametros) {
+		this.listaParametros = listaParametros;
+	}
+
+	/**
      * Returns the size of the type.
      * @return the size of the type.
      */
     @Override
-    public int getSize ()
-    {
+    public int getSize () {
         // TODO: Student work
         return 1;
     }

@@ -1,8 +1,7 @@
 package compiler.semantic.symbol;
 
 import java.util.ArrayList;
-
-//import compiler.syntax.nonTerminal.Selectorvalororeferencia;
+import compiler.syntax.nonTerminal.Selectorvalororeferencia;
 import es.uned.lsi.compiler.semantic.ScopeIF;
 import es.uned.lsi.compiler.semantic.symbol.SymbolBase;
 import es.uned.lsi.compiler.semantic.type.TypeIF;
@@ -13,21 +12,22 @@ import es.uned.lsi.compiler.semantic.type.TypeIF;
 
 public class SymbolProcedure extends SymbolBase {
 	
-	//private ArrayList<Selectorvalororeferencia> listaParametros;
-   
+	private ArrayList<Selectorvalororeferencia> listaParametros;
     /**
      * Constructor for SymbolProcedure.
      * @param scope The declaration scope.
      * @param name The symbol name.
      * @param type The symbol type.
      */
-    public SymbolProcedure (ScopeIF scope, String name, TypeIF type/*, ArrayList<Selectorvalororeferencia> listaParametros*/) {
+    public SymbolProcedure (ScopeIF scope, String name, TypeIF type) {
         super (scope, name, type);
-        //this.listaParametros = listaParametros;
-    } 
+    }
     
-    /*Getter para la lista de parametros*/
-	/*public ArrayList<Selectorvalororeferencia> getListaParametros() {
-		return listaParametros;
-	}*/
+    /*Setter de lista de parametros*/
+	public void setListaParametros(ArrayList<Selectorvalororeferencia> listaParametros) {
+		this.listaParametros = listaParametros;
+	} 
+    
+    
+    
 }
