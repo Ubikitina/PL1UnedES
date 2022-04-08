@@ -159,9 +159,9 @@ non terminal funcion;
 non terminal selectorpof;
 
 non terminal parametrofuncionoproc;
-non terminal llamadafuncion ; 
+non terminal Llamadafuncion llamadafuncion ; 
 
-non terminal parteizquierdaasignacion;  
+non terminal Parteizquierdaasignacion parteizquierdaasignacion;  
 non terminal sentenciadeasignacion;
 
 non terminal parametroEscribir ;
@@ -180,7 +180,7 @@ non terminal sentenciaforFuncion;
 non terminal sentenciaDevolver;
 
 
-non terminal parametroasignacion;
+non terminal Expresion parametroasignacion;
 
 non terminal sentenciallamadafuncion;
 
@@ -573,7 +573,7 @@ defprincipal ::= COMIENZOPROGRAMA IDEN:id {:
  *================================================*/
 
 // Expresiones
-expresion ::=  expresion:e1 MENORQUE  expresion:e2 {: //TODO todas las expresiones menos IDEN
+expresion ::=  expresion:e1 MENORQUE  expresion:e2 {:
 	// Comprobamos que los tipos no sean null para no tener un null pointer exception
 	if(e1.getTipo() != null && e2.getTipo() != null){
 		if(e1.getTipo().getName().equals("ENTERO") && e2.getTipo().getName().equals("ENTERO")){
@@ -586,8 +586,19 @@ expresion ::=  expresion:e1 MENORQUE  expresion:e2 {: //TODO todas las expresion
 	}else{
 		semanticErrorManager.semanticFatalError("Uno o ambos de los tipos de la expresion " + e1.getId() + " < " + e2.getId() + " es null.");
 	}
-:} |  expresion IGUALDAD  expresion {:
-	RESULT = new Expresion();
+:} |  expresion:e1 IGUALDAD  expresion:e2 {:
+	// Comprobamos que los tipos no sean null para no tener un null pointer exception
+	if(e1.getTipo() != null && e2.getTipo() != null){
+		if(e1.getTipo().getName().equals("ENTERO") && e2.getTipo().getName().equals("ENTERO")){
+			Expresion expr = new Expresion(); // Creamos la expresion
+			expr.setTipo(scopeManager.searchType("BOOLEANO"));// Establecemos el tipo
+			RESULT = expr; // Propagamos la expresion
+		} else {
+			semanticErrorManager.semanticFatalError("Uno o ambos de los tipos de la expresion " + e1.getId() + " == " + e2.getId() + " no es un entero.");
+		}
+	}else{
+		semanticErrorManager.semanticFatalError("Uno o ambos de los tipos de la expresion " + e1.getId() + " == " + e2.getId() + " es null.");
+	}
 :} | IDEN:id {:
 	Expresion expr = new Expresion(id.getLexema().toUpperCase()); // Creamos la expresion
 	if(scopeManager.containsSymbol(expr.getId())){ // Si existe ya en la tabla de simbolos
@@ -595,44 +606,98 @@ expresion ::=  expresion:e1 MENORQUE  expresion:e2 {: //TODO todas las expresion
 		semanticErrorManager.semanticDebug(expr);
 	}
 	RESULT = expr;
-:} | llamadafuncion {:
-	RESULT = new Expresion();
+:} | llamadafuncion:lf {:
+	Expresion expr = new Expresion(); // Creamos la expresion
+	expr.setTipo(lf.getTipo());// Establecemos el tipo
+	RESULT = expr;
 :} | CIERTO {:
-	RESULT = new Expresion();
+	Expresion expr = new Expresion(); // Creamos la expresion
+	expr.setTipo(scopeManager.searchType("BOOLEANO"));// Establecemos el tipo
+	RESULT = expr;
 :} | FALSO {:
-	RESULT = new Expresion();
-:} | miembrovector {:
-	RESULT = new Expresion();
+	Expresion expr = new Expresion(); // Creamos la expresion
+	expr.setTipo(scopeManager.searchType("BOOLEANO"));// Establecemos el tipo
+	RESULT = expr;
+:} | miembrovector:mv {:
+	Expresion expr = new Expresion(); // Creamos la expresion
+	expr.setTipo(mv.getTipo());// Establecemos el tipo
+	RESULT = expr;
 :} | NUM {:
-	RESULT = new Expresion();
+	Expresion expr = new Expresion(); // Creamos la expresion
+	expr.setTipo(scopeManager.searchType("ENTERO"));// Establecemos el tipo
+	RESULT = expr;
 :} | expresionlvl2:ex {:
 	RESULT = ex;
 :};
 
-expresionlvl2 ::=  expresion SUMA expresion {:
-	RESULT = new Expresion();
+expresionlvl2 ::=  expresion:e1 SUMA expresion:e2 {:
+	// Comprobamos que los tipos no sean null para no tener un null pointer exception
+	if(e1.getTipo() != null && e2.getTipo() != null){
+		if(e1.getTipo().getName().equals("ENTERO") && e2.getTipo().getName().equals("ENTERO")){
+			Expresion expr = new Expresion(); // Creamos la expresion
+			expr.setTipo(scopeManager.searchType("ENTERO"));// Establecemos el tipo
+			RESULT = expr; // Propagamos la expresion
+		} else {
+			semanticErrorManager.semanticFatalError("Uno o ambos de los tipos de la expresion " + e1.getId() + " + " + e2.getId() + " no es un entero.");
+		}
+	}else{
+		semanticErrorManager.semanticFatalError("Uno o ambos de los tipos de la expresion " + e1.getId() + " + " + e2.getId() + " es null.");
+	}
 :} | expresionlvl3:ex {:
 	RESULT = ex;
 :} ;
 
-expresionlvl3 ::=  expresion YLOGICA expresion {:
-	RESULT = new Expresion();
-:} |  expresion PRODUCTO expresion {:
-	RESULT = new Expresion();
+expresionlvl3 ::=  expresion:e1 YLOGICA expresion:e2 {:
+	// Comprobamos que los tipos no sean null para no tener un null pointer exception
+	if(e1.getTipo() != null && e2.getTipo() != null){
+		if(e1.getTipo().getName().equals("BOOLEANO") && e2.getTipo().getName().equals("BOOLEANO")){
+			Expresion expr = new Expresion(); // Creamos la expresion
+			expr.setTipo(scopeManager.searchType("BOOLEANO"));// Establecemos el tipo
+			RESULT = expr; // Propagamos la expresion
+		} else {
+			semanticErrorManager.semanticFatalError("Uno o ambos de los tipos de la expresion " + e1.getId() + " y " + e2.getId() + " no es un booleano.");
+		}
+	}else{
+		semanticErrorManager.semanticFatalError("Uno o ambos de los tipos de la expresion " + e1.getId() + " y " + e2.getId() + " es null.");
+	}
+:} |  expresion:e1 PRODUCTO expresion:e2 {:
+	// Comprobamos que los tipos no sean null para no tener un null pointer exception
+	if(e1.getTipo() != null && e2.getTipo() != null){
+		if(e1.getTipo().getName().equals("ENTERO") && e2.getTipo().getName().equals("ENTERO")){
+			Expresion expr = new Expresion(); // Creamos la expresion
+			expr.setTipo(scopeManager.searchType("ENTERO"));// Establecemos el tipo
+			RESULT = expr; // Propagamos la expresion
+		} else {
+			semanticErrorManager.semanticFatalError("Uno o ambos de los tipos de la expresion " + e1.getId() + " * " + e2.getId() + " no es un entero.");
+		}
+	}else{
+		semanticErrorManager.semanticFatalError("Uno o ambos de los tipos de la expresion " + e1.getId() + " * " + e2.getId() + " es null.");
+	}
 :} | expresionlvl4:ex {:
 	RESULT = ex;
 :};
 
-expresionlvl4 ::= NOLOGICO  expresion {:
-	RESULT = new Expresion();
+expresionlvl4 ::= NOLOGICO  expresion:e1 {:
+	// Comprobamos que los tipos no sean null para no tener un null pointer exception
+	if(e1.getTipo() != null){
+		if(e1.getTipo().getName().equals("BOOLEANO")){
+			Expresion expr = new Expresion(); // Creamos la expresion
+			expr.setTipo(scopeManager.searchType("BOOLEANO"));// Establecemos el tipo
+			RESULT = expr; // Propagamos la expresion
+		} else {
+			semanticErrorManager.semanticFatalError("El tipo de la expresion " + e1.getId() + " no es un booleano.");
+		}
+	}else{
+		semanticErrorManager.semanticFatalError("El tipo de la expresion " + e1.getId() + " es null.");
+	}
 :} | expresionlvl5:ex {:
 	RESULT = ex;
 :} ;
 
-expresionlvl5 ::= PIZQUIERDO expresion PDERECHO {:
-	RESULT = new Expresion();
-:} | CIZQUIERDO expresion CDERECHO {:
-	RESULT = new Expresion();
+expresionlvl5 ::= PIZQUIERDO expresion:expr PDERECHO {:
+	RESULT = expr;
+:} | CIZQUIERDO expresion:expr CDERECHO {:
+	RESULT = expr;
 :} ;
 
 /*================================================*
@@ -641,32 +706,81 @@ expresionlvl5 ::= PIZQUIERDO expresion PDERECHO {:
 
 // Acceso a vectores
 miembrovector::= IDEN:id CIZQUIERDO valorango CDERECHO {:
-	RESULT = new Miembrovector(id.getLexema().toUpperCase());
+	// Comprobamos si el miembrovector esta previametne incluido en la tabla de simbolos
+	if(scopeManager.containsSymbol(id.getLexema().toUpperCase())){
+		Miembrovector mv = new Miembrovector(id.getLexema().toUpperCase());
+		TypeIF tipoMiembroVector = (scopeManager.searchSymbol(id.getLexema().toUpperCase())).getType();
+		if(tipoMiembroVector instanceof TypeArray){
+			mv.setTipo(((TypeArray)tipoMiembroVector).getTipo().getTipo()); // Obtenemos el tipo y establecemos al mv
+			RESULT = mv;
+		}else{
+			semanticErrorManager.semanticFatalError("El simbolo "+ id.getLexema().toUpperCase()+ " no es una instancia de TypeArray.");
+		}
+		
+	} else {
+		semanticErrorManager.semanticFatalError("El simbolo "+ id.getLexema().toUpperCase()+ " no esta contenido en la tabla de simbolos."); 
+	}	
 :};
 
 /*================================================*
  *============SENTENCIAS DE ASIGNACION============*
  *================================================*/
  
-// Sentencias de asignacion
-parteizquierdaasignacion ::= IDEN |miembrovector  ;
-sentenciadeasignacion ::= parteizquierdaasignacion ASIGNACION parametroasignacion DSENTENCIAS; 
-parametroasignacion ::= expresion ;
+parteizquierdaasignacion ::= IDEN:id {:
+	// Comprobamos si el identificador esta previametne incluido en la tabla de simbolos
+	if(scopeManager.containsSymbol(id.getLexema().toUpperCase())){
+		Parteizquierdaasignacion pizq = new Parteizquierdaasignacion(id.getLexema().toUpperCase());
+		pizq.setTipo((scopeManager.searchSymbol(id.getLexema().toUpperCase())).getType()); // Obtenemos el tipo del simbolo y establecemos al pizq
+		RESULT = pizq;
+	} else {
+		semanticErrorManager.semanticFatalError("El simbolo "+ id.getLexema().toUpperCase()+ " no esta contenido en la tabla de simbolos."); 
+	}
+:} | miembrovector:mv {:
+	Parteizquierdaasignacion pizq = new Parteizquierdaasignacion(mv.getId());
+	pizq.setTipo(mv.getTipo());
+	RESULT = pizq;
+:};
+
+sentenciadeasignacion ::= parteizquierdaasignacion:pizq ASIGNACION parametroasignacion:expr DSENTENCIAS {:
+	// La parte izquierda tiene que ser instancia de SymbolVariable o SymbolParameter, y tiene que ser una instancia de tipo simple
+	if((scopeManager.searchSymbol(pizq.getId())instanceof SymbolVariable || scopeManager.searchSymbol(pizq.getId())instanceof SymbolParameter) && (pizq.getTipo() instanceof TypeSimple)){
+		// El tipo de pizq tiene que coincidir con el tipo de expr
+		if(pizq.getTipo().getName().equals(expr.getTipo().getName())){
+			semanticErrorManager.semanticDebug("El tipo de " + pizq.getId()+ " y " + expr.getId() + " coinciden, asignacion OK.");
+		}else{
+			semanticErrorManager.semanticFatalError("El tipo de " + pizq.getId()+ " y " + expr.getId() + " no coinciden.");
+		}
+	}else{
+		semanticErrorManager.semanticFatalError(pizq.getId()+ " no puede estar en la parte izquierda de una sentencia de asignacion porque no es o SymbolVariable o SymbolParameter o del tipo TypeSimple.");
+	}
+
+:}; 
+
+parametroasignacion ::= expresion:e {:
+	RESULT = e;
+:} ;
 
 /*================================================*
  *===============LLAMADA A FUNCION================*
  *================================================*/
 
-// Llamada a función
 parametrofuncionoproc ::=     listavariables ;
-llamadafuncion ::= IDEN PIZQUIERDO parametrofuncionoproc PDERECHO;  
+llamadafuncion ::= IDEN:id PIZQUIERDO parametrofuncionoproc PDERECHO {: //TODO la parte de parametrofuncionoproc
+	// Comprobamos si el identificador de la funcion esta previametne incluido en la tabla de simbolos
+	if(scopeManager.containsSymbol(id.getLexema().toUpperCase())){
+		Llamadafuncion lf = new Llamadafuncion(id.getLexema().toUpperCase());
+		lf.setTipo((scopeManager.searchSymbol(id.getLexema().toUpperCase())).getType()); // Obtenemos el tipo del simbolo y establecemos al lf
+		RESULT = lf;
+	} else {
+		semanticErrorManager.semanticFatalError("La funcion "+ id.getLexema().toUpperCase()+ " no esta contenido en la tabla de simbolos."); 
+	}	
+:};  
 sentenciallamadafuncion ::= llamadafuncion DSENTENCIAS;
 
 /*================================================*
  *===================SENTENCIAS===================*
  *================================================*/
 
-// Sentencias
 sentencia ::= sentenciadeasignacion | sentenciaif | sentenciafor | sentenciaEscribir | sentenciallamadafuncion ;
 sentenciaFuncion ::= sentenciadeasignacion | sentenciaifFuncion | sentenciaforFuncion | sentenciaEscribir | sentenciallamadafuncion | sentenciaDevolver;
 listaSentencias ::= sentencia  listaSentencias | epsilon;
@@ -676,7 +790,6 @@ listaSentenciasFuncion ::= sentenciaFuncion listaSentenciasFuncion | epsilon;
  *======================IF========================*
  *================================================*/
 
-// if
 sentenciaif ::= COMIENZOSI expresion  STARTIF DELIMFUNC listaSentencias rellenoif  FINBLOQUESENTENCIAS COMIENZOSI DSENTENCIAS ;
 sentenciaifFuncion ::= COMIENZOSI expresion  STARTIF DELIMFUNC listaSentenciasFuncion rellenoifFuncion  FINBLOQUESENTENCIAS COMIENZOSI DSENTENCIAS ;
 rellenoifFuncion ::=  ALTERNATIVASI DELIMFUNC  listaSentenciasFuncion | epsilon ;
@@ -686,7 +799,6 @@ rellenoif ::=  ALTERNATIVASI DELIMFUNC  listaSentencias | epsilon ;
  *======================FOR=======================*
  *================================================*/
 
-// for 
 sentenciafor ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO expresion DELIMFUNC listaSentencias FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
 sentenciaforFuncion ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO expresion DELIMFUNC listaSentenciasFuncion FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
 
@@ -694,7 +806,6 @@ sentenciaforFuncion ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO ex
  *===================ESCRIBIR=====================*
  *================================================*/
 
-// escribir. 
 parametroEscribir ::= STRING | expresion | epsilon ;
 sentenciaEscribir ::= ESCRIBIR PIZQUIERDO parametroEscribir PDERECHO DSENTENCIAS;
 
@@ -702,7 +813,6 @@ sentenciaEscribir ::= ESCRIBIR PIZQUIERDO parametroEscribir PDERECHO DSENTENCIAS
  *===================DEVOLVER=====================*
  *================================================*/
 
-// devolver
 sentenciaDevolver ::= FRETURN expresion DSENTENCIAS;
 
 
