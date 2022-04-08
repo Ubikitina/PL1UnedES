@@ -573,12 +573,28 @@ defprincipal ::= COMIENZOPROGRAMA IDEN:id {:
  *================================================*/
 
 // Expresiones
-expresion ::=  expresion MENORQUE  expresion {: //TODO todas las expresiones menos IDEN
-	RESULT = new Expresion();
+expresion ::=  expresion:e1 MENORQUE  expresion:e2 {: //TODO todas las expresiones menos IDEN
+	// Comprobamos que los tipos no sean null para no tener un null pointer exception
+	if(e1.getTipo() != null && e2.getTipo() != null){
+		if(e1.getTipo().getName().equals("ENTERO") && e2.getTipo().getName().equals("ENTERO")){
+			Expresion expr = new Expresion(); // Creamos la expresion
+			expr.setTipo(scopeManager.searchType("BOOLEANO"));// Establecemos el tipo
+			RESULT = expr; // Propagamos la expresion
+		} else {
+			semanticErrorManager.semanticFatalError("Uno o ambos de los tipos de la expresion " + e1.getId() + " < " + e2.getId() + " no es un entero.");
+		}
+	}else{
+		semanticErrorManager.semanticFatalError("Uno o ambos de los tipos de la expresion " + e1.getId() + " < " + e2.getId() + " es null.");
+	}
 :} |  expresion IGUALDAD  expresion {:
 	RESULT = new Expresion();
 :} | IDEN:id {:
-	RESULT = new Expresion(id.getLexema().toUpperCase());
+	Expresion expr = new Expresion(id.getLexema().toUpperCase()); // Creamos la expresion
+	if(scopeManager.containsSymbol(expr.getId())){ // Si existe ya en la tabla de simbolos
+		expr.setTipo(scopeManager.searchSymbol(expr.getId()).getType());// Establecemos el tipo
+		semanticErrorManager.semanticDebug(expr);
+	}
+	RESULT = expr;
 :} | llamadafuncion {:
 	RESULT = new Expresion();
 :} | CIERTO {:
