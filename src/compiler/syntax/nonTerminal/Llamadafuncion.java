@@ -2,13 +2,20 @@ package compiler.syntax.nonTerminal;
 
 import es.uned.lsi.compiler.semantic.type.TypeIF;
 
-public class Miembrovector extends NonTerminal {
+public class Llamadafuncion extends NonTerminal {
 	
 	private String id;
 	private TypeIF tipo;
 
+
+	/*Constructor vacío*/
+	public Llamadafuncion() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+	
 	/*Constructor using id*/
-	public Miembrovector(String id) {
+	public Llamadafuncion(String id) {
 		super();
 		this.id = id;
 	}
@@ -27,6 +34,4 @@ public class Miembrovector extends NonTerminal {
 	public void setTipo(TypeIF tipo) {
 		this.tipo = tipo;
 	}
-	
-
 }
