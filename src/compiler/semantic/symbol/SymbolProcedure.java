@@ -27,6 +27,11 @@ public class SymbolProcedure extends SymbolBase {
 	public void setListaParametros(ArrayList<Selectorvalororeferencia> listaParametros) {
 		this.listaParametros = listaParametros;
 	} 
+	
+	/*Getter para la lista de parametros*/
+	public ArrayList<Selectorvalororeferencia> getListaParametros() {
+		return listaParametros;
+	}
     
     
     
