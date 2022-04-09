@@ -158,7 +158,7 @@ non terminal procedimiento;
 non terminal funcion;
 non terminal selectorpof;
 
-non terminal parametrofuncionoproc;
+non terminal Listavariables parametrofuncionoproc;
 non terminal Llamadafuncion llamadafuncion ; 
 
 non terminal Parteizquierdaasignacion parteizquierdaasignacion;  
@@ -348,7 +348,7 @@ valorango ::= NUM:valor_num {:
 	RESULT = new Valorango(Integer.parseInt(valor_num.getLexema().toUpperCase()));
 :} | IDEN:id {:
 	RESULT = new Valorango(id.getLexema().toUpperCase(), true, false);
-:} | miembrovector:m {:
+:} | miembrovector:m {: //TODO no se si esta bien porque deberiamos de coger el valor del miembrovector, no su identificador
 	RESULT = new Valorango(m.getId(), false, true);
 :};
 
@@ -376,15 +376,25 @@ tipovariable ::= BOOLEANO {:
 :};
 
 selectorvalororeferencia ::=  PARAMETROVALOR IDEN:id {:
-	errorSiExisteSimbolo(id.getLexema().toUpperCase(), id.getLine());
 	RESULT = new Selectorvalororeferencia(id.getLexema().toUpperCase(), false);
 :} | expresion:ex {:
-	RESULT = new Selectorvalororeferencia(ex.getId(), true);
-	//TODO Pendiente de terminar, solo he contemplado la parte de IDEN, faltarian las demas expresiones para las llamadas a funciones.
-	// Volver cuando vaya a hacer las llamadas a las funciones.
+	Selectorvalororeferencia svor = new Selectorvalororeferencia(ex.getId(), true);
+	svor.setTipo(ex.getTipo());
+	RESULT = svor;
 :};
 
 defvariables ::= listavariables:listVariables DELIMFUNC tipovariable:tipo puntoycomaopcional defvariables:listVariable {:
+	// Comprobar que ningun variable de la lista existe
+	ArrayList<Selectorvalororeferencia> listaNuevasVariables = listVariables.getListaV();
+	for (int x = 0; x < listaNuevasVariables.size(); x++) { 
+		if(listaNuevasVariables.get(x).getId() != null){
+			errorSiExisteSimbolo(listaNuevasVariables.get(x).getId(), 0); //TODO linea que causa el error pendiente de hacer
+		}else{
+			semanticErrorManager.semanticFatalError("Se ha utilizado una expresion no admitida en la declaracion de variables de la seccion de variables, declaracion de funciones o declaracion de procedimientos.");
+		}
+	} 
+
+	// Como ninguno de la lista existe, añado las variables a defvariables y devuelvo defvariables
 	if(listVariable == null){ // Si el hashmap de Tipo-ListaVariables esta vacio
 		RESULT = new Defvariables(tipo.getTipo(), (ArrayList<Selectorvalororeferencia>)(listVariables.getListaV()));
 	} else { // Si el hashmap de Tipo-ListaVariables contiene elementos
@@ -475,6 +485,13 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id PIZQUIERDO defvariables:listaVar
 		for(int x = 0; x < listaAux.size(); x++){
 			Selectorvalororeferencia variable = listaAux.get(x);
 			errorSiExisteSimbolo(variable.getId(), 0); //TODO la linea no esta definida aqui
+
+			// Comprobacion de que no se pasa por valor ningun vector completo, esta prohibido
+			if(variable.isPorValor() && variable.getTipo() instanceof TypeArray){
+				semanticErrorManager.semanticFatalError("No se puede pasar por valor el vector completo " + variable.getId());
+			}
+
+			// Crear e incluir el simbolo al symbolTable
 			SymbolParameter symbol = new SymbolParameter(scope, variable.getId(), variable.getTipo());
 			symbolTable.addSymbol(symbol);
 		}
@@ -519,6 +536,13 @@ funcion ::= DECLAREFUNCION IDEN:id PIZQUIERDO defvariables:listaVar PDERECHO DEL
 		for(int x = 0; x < listaAux.size(); x++){
 			Selectorvalororeferencia variable = listaAux.get(x);
 			errorSiExisteSimbolo(variable.getId(), 0); //TODO la linea no esta definida aqui
+
+			// Comprobacion de que no se pasa por valor ningun vector completo, esta prohibido
+			if(variable.isPorValor() && variable.getTipo() instanceof TypeArray){
+				semanticErrorManager.semanticFatalError("No se puede pasar por valor el vector completo " + variable.getId());
+			}
+
+			// Crear e incluir el simbolo al symbolTable
 			SymbolParameter symbol = new SymbolParameter(scope, variable.getId(), variable.getTipo());
 			symbolTable.addSymbol(symbol);
 		}
@@ -705,7 +729,7 @@ expresionlvl5 ::= PIZQUIERDO expresion:expr PDERECHO {:
  *================================================*/
 
 // Acceso a vectores
-miembrovector::= IDEN:id CIZQUIERDO valorango CDERECHO {:
+miembrovector::= IDEN:id CIZQUIERDO valorango CDERECHO {: //TODO aqui deberia de comparar que el numero de valorango entre dentro de los limites del rango del tipo de vector
 	// Comprobamos si el miembrovector esta previametne incluido en la tabla de simbolos
 	if(scopeManager.containsSymbol(id.getLexema().toUpperCase())){
 		Miembrovector mv = new Miembrovector(id.getLexema().toUpperCase());
@@ -763,18 +787,58 @@ parametroasignacion ::= expresion:e {:
 /*================================================*
  *===============LLAMADA A FUNCION================*
  *================================================*/
+ // Nota - Esta seccion, pese a llamarse llamada a funcion, tambien sirve para realizar las llamadas a los procedimientos.
 
-parametrofuncionoproc ::=     listavariables ;
-llamadafuncion ::= IDEN:id PIZQUIERDO parametrofuncionoproc PDERECHO {: //TODO la parte de parametrofuncionoproc
-	// Comprobamos si el identificador de la funcion esta previametne incluido en la tabla de simbolos
-	if(scopeManager.containsSymbol(id.getLexema().toUpperCase())){
-		Llamadafuncion lf = new Llamadafuncion(id.getLexema().toUpperCase());
-		lf.setTipo((scopeManager.searchSymbol(id.getLexema().toUpperCase())).getType()); // Obtenemos el tipo del simbolo y establecemos al lf
-		RESULT = lf;
-	} else {
-		semanticErrorManager.semanticFatalError("La funcion "+ id.getLexema().toUpperCase()+ " no esta contenido en la tabla de simbolos."); 
-	}	
+parametrofuncionoproc ::=     listavariables:lv {:
+	RESULT = lv;
+:} ;
+
+llamadafuncion ::= IDEN:id PIZQUIERDO parametrofuncionoproc:lv PDERECHO {:
+	// Comprobamos si el identificador esta previamente incluido en la tabla de simbolos como SymbolProcedure o SymbolFunction
+	if(!scopeManager.containsSymbol(id.getLexema().toUpperCase()) || !(   scopeManager.searchSymbol(id.getLexema().toUpperCase()) instanceof SymbolProcedure || scopeManager.searchSymbol(id.getLexema().toUpperCase()) instanceof SymbolFunction  )){
+		semanticErrorManager.semanticFatalError("La funcion "+ id.getLexema().toUpperCase()+ " no esta contenido en la tabla de simbolos como funcion o procedimiento."); 
+	}
+
+	Llamadafuncion lf = new Llamadafuncion(id.getLexema().toUpperCase());
+	lf.setTipo((scopeManager.searchSymbol(id.getLexema().toUpperCase())).getType()); // Obtenemos el tipo del simbolo y establecemos al lf
+
+	//Variables para la comprobacion de parametros
+	ArrayList<Selectorvalororeferencia> listaParametrosEsperados = null;
+	ArrayList<Selectorvalororeferencia> listaParametrosPasados = lv.getListaV();
+		
+	// Si es una funcion
+	if(scopeManager.searchSymbol(id.getLexema().toUpperCase()) instanceof SymbolFunction){
+		//establecemos el tipo de retorno como tipo
+		SymbolFunction sf = (SymbolFunction)scopeManager.searchSymbol(id.getLexema().toUpperCase());
+		lf.setTipo(scopeManager.searchType(sf.getTipoRetorno()));
+
+		// Obtenemos la lista de parametros esperados de la funcion
+		listaParametrosEsperados = sf.getListaParametros();
+	}
+
+	// Si es un procedimiento
+	if(scopeManager.searchSymbol(id.getLexema().toUpperCase()) instanceof SymbolProcedure){
+		// Obtenemos la lista de parametros esperados del procedimiento
+		SymbolProcedure sp = (SymbolProcedure)scopeManager.searchSymbol(id.getLexema().toUpperCase());
+		listaParametrosEsperados = sp.getListaParametros();
+	}
+
+	// Comparamos ambas listas de parametros
+	if(listaParametrosEsperados.size() != listaParametrosPasados.size()){ // Comprobacion en numero
+		semanticErrorManager.semanticFatalError("El numero de parametros de "+ id.getLexema().toUpperCase()+ " no corresponde a lo esperado."); 
+	}
+	for (int x = 0; x < listaParametrosEsperados.size(); x++){ // Comprobacion en tipo y orden
+		Selectorvalororeferencia parametroEsperado = listaParametrosEsperados.get(x);
+		Selectorvalororeferencia parametroPasado = listaParametrosPasados.get(x);
+
+		if(!parametroEsperado.getTipo().getName().equals(parametroPasado.getTipo().getName())){
+			semanticErrorManager.semanticFatalError("Alguno o varios de los tipos u orden de los parametros de "+ id.getLexema().toUpperCase()+ " no corresponde a lo esperado.");
+		}
+	}
+
+	RESULT = lf;
 :};  
+
 sentenciallamadafuncion ::= llamadafuncion DSENTENCIAS;
 
 /*================================================*
@@ -782,8 +846,11 @@ sentenciallamadafuncion ::= llamadafuncion DSENTENCIAS;
  *================================================*/
 
 sentencia ::= sentenciadeasignacion | sentenciaif | sentenciafor | sentenciaEscribir | sentenciallamadafuncion ;
+
 sentenciaFuncion ::= sentenciadeasignacion | sentenciaifFuncion | sentenciaforFuncion | sentenciaEscribir | sentenciallamadafuncion | sentenciaDevolver;
+
 listaSentencias ::= sentencia  listaSentencias | epsilon;
+
 listaSentenciasFuncion ::= sentenciaFuncion listaSentenciasFuncion | epsilon;
 
 /*================================================*
@@ -791,8 +858,11 @@ listaSentenciasFuncion ::= sentenciaFuncion listaSentenciasFuncion | epsilon;
  *================================================*/
 
 sentenciaif ::= COMIENZOSI expresion  STARTIF DELIMFUNC listaSentencias rellenoif  FINBLOQUESENTENCIAS COMIENZOSI DSENTENCIAS ;
+
 sentenciaifFuncion ::= COMIENZOSI expresion  STARTIF DELIMFUNC listaSentenciasFuncion rellenoifFuncion  FINBLOQUESENTENCIAS COMIENZOSI DSENTENCIAS ;
+
 rellenoifFuncion ::=  ALTERNATIVASI DELIMFUNC  listaSentenciasFuncion | epsilon ;
+
 rellenoif ::=  ALTERNATIVASI DELIMFUNC  listaSentencias | epsilon ;
 
 /*================================================*
@@ -800,6 +870,7 @@ rellenoif ::=  ALTERNATIVASI DELIMFUNC  listaSentencias | epsilon ;
  *================================================*/
 
 sentenciafor ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO expresion DELIMFUNC listaSentencias FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
+
 sentenciaforFuncion ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO expresion DELIMFUNC listaSentenciasFuncion FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
 
 /*================================================*
@@ -807,6 +878,7 @@ sentenciaforFuncion ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO ex
  *================================================*/
 
 parametroEscribir ::= STRING | expresion | epsilon ;
+
 sentenciaEscribir ::= ESCRIBIR PIZQUIERDO parametroEscribir PDERECHO DSENTENCIAS;
 
 /*================================================*
