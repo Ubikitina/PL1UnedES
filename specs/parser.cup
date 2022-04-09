@@ -168,16 +168,16 @@ non terminal parametroEscribir ;
 non terminal sentenciaEscribir ;
 
 non terminal sentencia;
-non terminal sentenciaFuncion;
+non terminal Sentencia sentenciaFuncion;
 non terminal listaSentencias;
-non terminal listaSentenciasFuncion;
+non terminal ListaSentenciasFuncion listaSentenciasFuncion;
 non terminal sentenciaif;
-non terminal sentenciaifFuncion;
+non terminal Sentencia sentenciaifFuncion;
 non terminal rellenoif;
-non terminal rellenoifFuncion;
+non terminal ListaSentenciasFuncion rellenoifFuncion;
 non terminal sentenciafor;
-non terminal sentenciaforFuncion;
-non terminal sentenciaDevolver;
+non terminal Sentencia sentenciaforFuncion;
+non terminal SentenciaDevolver sentenciaDevolver;
 
 
 non terminal Expresion parametroasignacion;
@@ -553,7 +553,36 @@ funcion ::= DECLAREFUNCION IDEN:id PIZQUIERDO defvariables:listaVar PDERECHO DEL
 		semanticErrorManager.semanticFatalError("Tipo " + tipo.getNombre_tipo() + " de retorno de funcion no existe, error.");
 	} //es posible que no sea necesario hacer esta comprobacion, porque ya tenemos el tipo en su sitio y cualquier fallo lo detectaria la sintaxis
 
-:} DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentenciaFuncion listaSentenciasFuncion FINBLOQUESENTENCIAS DSENTENCIAS {:
+:} DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentenciaFuncion:sentFun listaSentenciasFuncion:listaSentFun {:
+	// Comprobar si hay alguna sentencia de devolver en las sentencias de esta funcion
+	if(sentFun.isEmptyListaSentenciaDeDevolver() && listaSentFun.isEmptyListaSentenciaDeDevolver()){
+		semanticErrorManager.semanticFatalError("La funcion " + id.getLexema().toUpperCase() + " no tiene sentencia de devolver, error.");
+	}
+
+	// Comprobar que las sentencias de devolver coincidan con el tipo devuelto esperado
+	TypeIF tipoRetornoFunEsperado = scopeManager.searchType(tipo.getNombre_tipo());
+
+	// Primero comprobamos con sentFun //AQUI
+	if(!sentFun.isEmptyListaSentenciaDeDevolver()){
+		ArrayList<SentenciaDevolver> lista1 = sentFun.getListaSentencias();
+		for (int i=0; i<lista1.size(); i++) {
+			if(!lista1.get(i).getTipoSenteciaDevolver().equals(tipoRetornoFunEsperado)){ // Lanzamos error si no es igual
+				semanticErrorManager.semanticFatalError("La funcion " + id.getLexema().toUpperCase() + " contiene una sentencia devolver que no coincide con el tipo de retorno de la funcion esperado, error.");
+			}
+		}
+	}
+	
+	// Luego comprobamos con listaSentFun
+	if(!listaSentFun.isEmptyListaSentenciaDeDevolver()){
+		ArrayList<SentenciaDevolver> lista = listaSentFun.getListaSentenciaFuncion();
+		for (int i=0; i<lista.size(); i++) {
+			if(!lista.get(i).getTipoSenteciaDevolver().equals(tipoRetornoFunEsperado)){ // Lanzamos error si no es igual
+				semanticErrorManager.semanticFatalError("La funcion " + id.getLexema().toUpperCase() + " contiene una sentencia devolver que no coincide con el tipo de retorno de la funcion esperado, error.");
+			}
+		}
+	}
+
+:} FINBLOQUESENTENCIAS DSENTENCIAS {:
 	// Cerramos el ambito actual (current scope)
 	scopeManager.closeScope();
 	semanticErrorManager.semanticDebug("Se ha cerrado el ambito actual.");
@@ -847,11 +876,30 @@ sentenciallamadafuncion ::= llamadafuncion DSENTENCIAS;
 
 sentencia ::= sentenciadeasignacion | sentenciaif | sentenciafor | sentenciaEscribir | sentenciallamadafuncion ;
 
-sentenciaFuncion ::= sentenciadeasignacion | sentenciaifFuncion | sentenciaforFuncion | sentenciaEscribir | sentenciallamadafuncion | sentenciaDevolver;
-
 listaSentencias ::= sentencia  listaSentencias | epsilon;
 
-listaSentenciasFuncion ::= sentenciaFuncion listaSentenciasFuncion | epsilon;
+sentenciaFuncion ::= sentenciadeasignacion {: //TODO todas las sentencias excepto los aspectos de devolver que ya estan hechos
+	RESULT = new Sentencia();
+:} | sentenciaifFuncion:sIf {:
+	RESULT = sIf;
+:} | sentenciaforFuncion:sFor {:
+	RESULT = sFor;
+:} | sentenciaEscribir {:
+	RESULT = new Sentencia();
+:} | sentenciallamadafuncion {:
+	RESULT = new Sentencia();
+:} | sentenciaDevolver:st {:
+	Sentencia s = new Sentencia();
+	s.addElemento(st);
+	RESULT = s;
+:};
+
+listaSentenciasFuncion ::= sentenciaFuncion:sent listaSentenciasFuncion:listaSent {:
+	listaSent.addAllLista(sent.getListaSentencias());
+	RESULT = listaSent;
+:} | epsilon {:
+	RESULT = new ListaSentenciasFuncion();
+:};
 
 /*================================================*
  *======================IF========================*
@@ -859,9 +907,18 @@ listaSentenciasFuncion ::= sentenciaFuncion listaSentenciasFuncion | epsilon;
 
 sentenciaif ::= COMIENZOSI expresion  STARTIF DELIMFUNC listaSentencias rellenoif  FINBLOQUESENTENCIAS COMIENZOSI DSENTENCIAS ;
 
-sentenciaifFuncion ::= COMIENZOSI expresion  STARTIF DELIMFUNC listaSentenciasFuncion rellenoifFuncion  FINBLOQUESENTENCIAS COMIENZOSI DSENTENCIAS ;
+sentenciaifFuncion ::= COMIENZOSI expresion  STARTIF DELIMFUNC listaSentenciasFuncion:listaSent rellenoifFuncion:listaRelleno {:
+	Sentencia sent = new Sentencia();
+	sent.setListaSentencias(listaSent.getListaSentenciaFuncion());
+	sent.addAllLista(listaRelleno.getListaSentenciaFuncion());
+	RESULT = sent;
+:} FINBLOQUESENTENCIAS COMIENZOSI DSENTENCIAS ;
 
-rellenoifFuncion ::=  ALTERNATIVASI DELIMFUNC  listaSentenciasFuncion | epsilon ;
+rellenoifFuncion ::=  ALTERNATIVASI DELIMFUNC  listaSentenciasFuncion:ls {:
+	RESULT = ls;
+:} | epsilon {:
+	RESULT = new ListaSentenciasFuncion();
+:} ;
 
 rellenoif ::=  ALTERNATIVASI DELIMFUNC  listaSentencias | epsilon ;
 
@@ -871,7 +928,11 @@ rellenoif ::=  ALTERNATIVASI DELIMFUNC  listaSentencias | epsilon ;
 
 sentenciafor ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO expresion DELIMFUNC listaSentencias FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
 
-sentenciaforFuncion ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO expresion DELIMFUNC listaSentenciasFuncion FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
+sentenciaforFuncion ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO expresion DELIMFUNC listaSentenciasFuncion:ls {:
+	Sentencia sent = new Sentencia();
+	sent.setListaSentencias(ls.getListaSentenciaFuncion());
+	RESULT = sent;
+:}FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
 
 /*================================================*
  *===================ESCRIBIR=====================*
@@ -885,7 +946,11 @@ sentenciaEscribir ::= ESCRIBIR PIZQUIERDO parametroEscribir PDERECHO DSENTENCIAS
  *===================DEVOLVER=====================*
  *================================================*/
 
-sentenciaDevolver ::= FRETURN expresion DSENTENCIAS;
+sentenciaDevolver ::= FRETURN expresion:expr DSENTENCIAS {:
+	SentenciaDevolver sentenciaD = new SentenciaDevolver();
+	sentenciaD.setTipoSenteciaDevolver(expr.getTipo());
+	RESULT = sentenciaD;
+:};
 
 
 
