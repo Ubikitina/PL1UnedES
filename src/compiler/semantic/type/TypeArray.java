@@ -60,19 +60,6 @@ public class TypeArray extends TypeBase {
 	
 	/*To print the information, since toString cannot be overwritten*/
 	public String imprimir() {
-		/*String rInferior;	
-		String rSuperior;
-		if(rangoInferior.getId() == null) {
-			rInferior = rangoInferior.getNum().toString();
-		}else {
-			rInferior = rangoInferior.getId();
-		}
-		if(rangoSuperior.getId() == null) {
-			rSuperior = rangoSuperior.getNum().toString();
-		}else {
-			rSuperior = rangoSuperior.getId();
-		}*/
-				
 		return "nombre_tipo=" + super.getName() + " rangoInferior=" + rangoInferior + " rangoSuperior=" + rangoSuperior + " tipo=" + tipo.getNombre_tipo();
 	}
 	
