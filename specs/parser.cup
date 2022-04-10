@@ -558,31 +558,8 @@ funcion ::= DECLAREFUNCION IDEN:id PIZQUIERDO defvariables:listaVar PDERECHO DEL
 
 :} DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO sentenciaFuncion:sentFun listaSentenciasFuncion:listaSentFun {:
 	// Comprobar si hay alguna sentencia de devolver en las sentencias de esta funcion
-	if(sentFun.isEmptyListaSentenciaDeDevolver() && listaSentFun.isEmptyListaSentenciaDeDevolver()){
-		semanticErrorManager.semanticFatalError("La funcion " + id.getLexema().toUpperCase() + " no tiene sentencia de devolver, error.");
-	}
-
-	// Comprobar que las sentencias de devolver coincidan con el tipo devuelto esperado
-	TypeIF tipoRetornoFunEsperado = scopeManager.searchType(tipo.getNombre_tipo());
-
-	// Primero comprobamos con sentFun //AQUI
-	if(!sentFun.isEmptyListaSentenciaDeDevolver()){
-		ArrayList<SentenciaDevolver> lista1 = sentFun.getListaSentencias();
-		for (int i=0; i<lista1.size(); i++) {
-			if(!lista1.get(i).getTipoSenteciaDevolver().equals(tipoRetornoFunEsperado)){ // Lanzamos error si no es igual
-				semanticErrorManager.semanticFatalError("La funcion " + id.getLexema().toUpperCase() + " contiene una sentencia devolver que no coincide con el tipo de retorno de la funcion esperado, error.");
-			}
-		}
-	}
-	
-	// Luego comprobamos con listaSentFun
-	if(!listaSentFun.isEmptyListaSentenciaDeDevolver()){
-		ArrayList<SentenciaDevolver> lista = listaSentFun.getListaSentenciaFuncion();
-		for (int i=0; i<lista.size(); i++) {
-			if(!lista.get(i).getTipoSenteciaDevolver().equals(tipoRetornoFunEsperado)){ // Lanzamos error si no es igual
-				semanticErrorManager.semanticFatalError("La funcion " + id.getLexema().toUpperCase() + " contiene una sentencia devolver que no coincide con el tipo de retorno de la funcion esperado, error.");
-			}
-		}
+	if(!(sentFun.isContieneSentenciaDevolver() || listaSentFun.isContieneSentenciaDevolver())){
+		semanticErrorManager.semanticFatalError("La funcion " + id.getLexema().toUpperCase() + " no tiene sentencia de devolver o existe una ruta de ejecucion que no alcanza una sentencia devolver, error.");
 	}
 
 :} FINBLOQUESENTENCIAS DSENTENCIAS {:
@@ -893,12 +870,14 @@ sentenciaFuncion ::= sentenciadeasignacion {: //TODO todas las sentencias except
 	RESULT = new Sentencia();
 :} | sentenciaDevolver:st {:
 	Sentencia s = new Sentencia();
-	s.addElemento(st);
+	s.setContieneSentenciaDevolver(true);
 	RESULT = s;
 :};
 
 listaSentenciasFuncion ::= sentenciaFuncion:sent listaSentenciasFuncion:listaSent {:
-	listaSent.addAllLista(sent.getListaSentencias());
+	if(sent.isContieneSentenciaDevolver()){
+		listaSent.setContieneSentenciaDevolver(true);
+	}
 	RESULT = listaSent;
 :} | epsilon {:
 	RESULT = new ListaSentenciasFuncion();
@@ -920,12 +899,15 @@ sentenciaifFuncion ::= COMIENZOSI:c expresion:ex  STARTIF DELIMFUNC listaSentenc
 	}
 	
 	Sentencia sent = new Sentencia();
-	sent.setListaSentencias(listaSent.getListaSentenciaFuncion());
-	sent.addAllLista(listaRelleno.getListaSentenciaFuncion());
+	// Solo cuento que las sentencias if tienen una sentencia devolver si tanto en si como en sino se incluye la sentencia devolver
+	if(listaRelleno.isEsRellenoIfFuncion() && listaSent.isContieneSentenciaDevolver() && listaRelleno.isContieneSentenciaDevolver()){
+		sent.setContieneSentenciaDevolver(true);
+	}
 	RESULT = sent;
 :} FINBLOQUESENTENCIAS COMIENZOSI DSENTENCIAS ;
 
 rellenoifFuncion ::=  ALTERNATIVASI DELIMFUNC  listaSentenciasFuncion:ls {:
+	ls.setEsRellenoIfFuncion(true);
 	RESULT = ls;
 :} | epsilon {:
 	RESULT = new ListaSentenciasFuncion();
@@ -941,7 +923,7 @@ sentenciafor ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO expresion
 
 sentenciaforFuncion ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO expresion DELIMFUNC listaSentenciasFuncion:ls {:
 	Sentencia sent = new Sentencia();
-	sent.setListaSentencias(ls.getListaSentenciaFuncion());
+	sent.setContieneSentenciaDevolver(ls.isContieneSentenciaDevolver());
 	RESULT = sent;
 :}FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
 
@@ -957,10 +939,25 @@ sentenciaEscribir ::= ESCRIBIR PIZQUIERDO parametroEscribir PDERECHO DSENTENCIAS
  *===================DEVOLVER=====================*
  *================================================*/
 
-sentenciaDevolver ::= FRETURN expresion:expr DSENTENCIAS {:
-	SentenciaDevolver sentenciaD = new SentenciaDevolver();
-	sentenciaD.setTipoSenteciaDevolver(expr.getTipo());
-	RESULT = sentenciaD;
+sentenciaDevolver ::= FRETURN:r expresion:expr DSENTENCIAS {:
+	ScopeIF scope = scopeManager.getCurrentScope();
+	String nombreFuncion = scope.getName(); // Obtenemos el nombre del scope actual
+	TypeIF tipoFuncion = scopeManager.searchType(nombreFuncion); // Obtenemos el tipo de la funcion actual
+
+	if(tipoFuncion instanceof TypeFunction){
+		// Pasos para la comprobacion del tipo
+		String tipoRetornoFuncion = ((TypeFunction)tipoFuncion).getTipoRetorno(); // Obtenemos el tipo de retorno de la funcion actual
+		if(!expr.getTipo().getName().equals(tipoRetornoFuncion)){ // Lanzamos error si el tipo no coincide con la sentencia devolver
+			semanticErrorManager.semanticFatalError("Error en el tipo del retorno de la linea " + r.getLine());
+		}
+
+		// Creacion de la sentencia devolver
+		SentenciaDevolver sentenciaD = new SentenciaDevolver();
+		RESULT = sentenciaD;
+
+	}else{
+		semanticErrorManager.semanticFatalError("Se ha detectado una sentencia devolver fuera de una funcion.");
+	}	
 :};
 
 
