@@ -418,7 +418,9 @@ listavariables ::= selectorvalororeferencia:selector DIDENTIFICADORES listavaria
 	RESULT = listaV; 
 :} | selectorvalororeferencia:selector {:
 	RESULT = new Listavariables(selector);
-:} | epsilon ;
+:} | epsilon {:
+	RESULT = new Listavariables();
+:};
 
 seccionvariables ::= DECLVARIABLES:dc defvariables:listVariables {: 
 	// Obtenemos el ambito y la tabla de simbolos
@@ -861,6 +863,7 @@ llamadafuncion ::= IDEN:id PIZQUIERDO parametrofuncionoproc:lv PDERECHO {:
 	if(listaParametrosEsperados.size() != listaParametrosPasados.size()){ // Comprobacion en numero
 		semanticErrorManager.semanticFatalError("El numero de parametros de "+ id.getLexema().toUpperCase()+ " no corresponde a lo esperado."); 
 	}
+	
 	for (int x = 0; x < listaParametrosEsperados.size(); x++){ // Comprobacion en tipo y orden
 		Selectorvalororeferencia parametroEsperado = listaParametrosEsperados.get(x);
 		Selectorvalororeferencia parametroPasado = listaParametrosPasados.get(x);
@@ -873,7 +876,11 @@ llamadafuncion ::= IDEN:id PIZQUIERDO parametrofuncionoproc:lv PDERECHO {:
 	RESULT = lf;
 :};  
 
-sentenciallamadafuncion ::= llamadafuncion DSENTENCIAS;
+sentenciallamadafuncion ::= llamadafuncion:lf DSENTENCIAS:d {:
+	if(!(lf.getTipo() instanceof TypeProcedure)){
+		semanticErrorManager.semanticFatalError("Se ha detectado una invocacion a funcion no autorizada en la linea "+ d.getLine()+ ". No se permite invocar funciones en sentencias.");
+	}
+:};
 
 /*================================================*
  *===================SENTENCIAS===================*
