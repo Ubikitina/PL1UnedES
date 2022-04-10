@@ -384,16 +384,6 @@ selectorvalororeferencia ::=  PARAMETROVALOR IDEN:id {:
 :};
 
 defvariables ::= listavariables:listVariables DELIMFUNC tipovariable:tipo puntoycomaopcional defvariables:listVariable {:
-	// Comprobar que ningun variable de la lista existe
-	//ArrayList<Selectorvalororeferencia> listaNuevasVariables = listVariables.getListaV();
-	//for (int x = 0; x < listaNuevasVariables.size(); x++) { 
-	//	if(listaNuevasVariables.get(x).getId() != null){
-	//		errorSiExisteSimbolo(listaNuevasVariables.get(x).getId(), 0); //TODO linea que causa el error pendiente de hacer
-	//	}else{
-	//		semanticErrorManager.semanticFatalError("Se ha utilizado una expresion no admitida en la declaracion de variables de la seccion de variables, declaracion de funciones o declaracion de procedimientos.");
-	//	}
-	//} 
-
 	// Añado las variables a defvariables y devuelvo defvariables
 	if(listVariable == null){ // Si la lista esta vacia, creamos nueva
 		RESULT = new Defvariables(tipo.getTipo(), (ArrayList<Selectorvalororeferencia>)(listVariables.getListaV())); 
@@ -919,11 +909,41 @@ rellenoif ::=  ALTERNATIVASI DELIMFUNC  listaSentencias | epsilon ;
  *======================FOR=======================*
  *================================================*/
 
-sentenciafor ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO expresion DELIMFUNC listaSentencias FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
+sentenciafor ::= COMIENZOBUCLEPARA IDEN:id RANGOBUCLEPARA expresion:e1 RANGO expresion:e2 DELIMFUNC listaSentencias {:
+	// Comprobamos que la variable indice esta declarada en las tablas de simbolos abiertos
+	if(!scopeManager.containsSymbol(id.getLexema().toUpperCase())){
+		semanticErrorManager.semanticFatalError("Variable del bucle para " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " no esta declarado anteriormente, error.");
+	}
 
-sentenciaforFuncion ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO expresion DELIMFUNC listaSentenciasFuncion:ls {:
+	// Comprobamos que el tipo de la variable indice es de tipo entero 
+	if(!scopeManager.searchSymbol(id.getLexema().toUpperCase()).getType().equals(scopeManager.searchType("ENTERO"))){
+		semanticErrorManager.semanticFatalError("El tipo de la variable del bucle para " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " no es de tipo entero, error.");
+	}
+
+	// Comprobamos que ambas expresiones del rango son del tipo entero
+	if(!(e1.getTipo().equals(scopeManager.searchType("ENTERO")) && e2.getTipo().equals(scopeManager.searchType("ENTERO")))){
+		semanticErrorManager.semanticFatalError("El tipo de alguna de las expresiones del rango del bucle para en linea " + id.getLine() + " no es de tipo entero, error.");
+	}
+:}FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
+
+sentenciaforFuncion ::= COMIENZOBUCLEPARA IDEN:id RANGOBUCLEPARA expresion:e1 RANGO expresion:e2 DELIMFUNC listaSentenciasFuncion {:
+	// Comprobamos que la variable indice esta declarada en las tablas de simbolos abiertos
+	if(!scopeManager.containsSymbol(id.getLexema().toUpperCase())){
+		semanticErrorManager.semanticFatalError("Variable del bucle para " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " no esta declarado anteriormente, error.");
+	}
+
+	// Comprobamos que el tipo de la variable indice es de tipo entero 
+	if(!scopeManager.searchSymbol(id.getLexema().toUpperCase()).getType().equals(scopeManager.searchType("ENTERO"))){
+		semanticErrorManager.semanticFatalError("El tipo de la variable del bucle para " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " no es de tipo entero, error.");
+	}
+
+	// Comprobamos que ambas expresiones del rango son del tipo entero
+	if(!(e1.getTipo().equals(scopeManager.searchType("ENTERO")) && e2.getTipo().equals(scopeManager.searchType("ENTERO")))){
+		semanticErrorManager.semanticFatalError("El tipo de alguna de las expresiones del rango del bucle para en linea " + id.getLine() + " no es de tipo entero, error.");
+	}
+
+	// Aunque dentro del bloque de sentencias para contenga una sentencia devuelve, como cabe la posibilidad de que el bucle para no llegue a ejecutarse, debe existir una sentencia del bucle fuera del bloque de sentencias del bucle para. Por lo que dejamos new Sentencia() con la variable contieneDevuelve a false.
 	Sentencia sent = new Sentencia();
-	sent.setContieneSentenciaDevolver(ls.isContieneSentenciaDevolver());
 	RESULT = sent;
 :}FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
 
@@ -931,7 +951,11 @@ sentenciaforFuncion ::= COMIENZOBUCLEPARA IDEN RANGOBUCLEPARA expresion RANGO ex
  *===================ESCRIBIR=====================*
  *================================================*/
 
-parametroEscribir ::= STRING | expresion | epsilon ;
+parametroEscribir ::= STRING | expresion:e1 {:
+	if(!(e1.getTipo().equals(scopeManager.searchType("ENTERO")))){
+		semanticErrorManager.semanticFatalError("El tipo del parametro pasado a una de las llamadas escribir() no es de tipo entero, error.");
+	}
+:} | epsilon ;
 
 sentenciaEscribir ::= ESCRIBIR PIZQUIERDO parametroEscribir PDERECHO DSENTENCIAS;
 
