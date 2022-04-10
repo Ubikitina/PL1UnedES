@@ -46,7 +46,7 @@ public class Selectorvalororeferencia extends NonTerminal {
 	
 	@Override
 	public String toString() {
-		return "Selectorvalororeferencia [id=" + id + ", esPorValor=" + esPorValor + "]";
+		return "Selectorvalororeferencia [id=" + id + ", esPorValor=" + esPorValor + ", tipo=" + tipo +"]";
 	}
 	
 	
