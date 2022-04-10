@@ -4,22 +4,19 @@ import es.uned.lsi.compiler.semantic.type.TypeIF;
 
 public class SentenciaDevolver extends NonTerminal {
 
-	private TypeIF tipoSenteciaDevolver;
+	private boolean contieneSentenciaDevolver;
 	
 	/*Constructor vacío*/
 	public SentenciaDevolver() {
 		super();
-		// TODO Auto-generated constructor stub
-	}
-	
-	/*Getter tipoSentenciaDevolver*/
-	public TypeIF getTipoSenteciaDevolver() {
-		return tipoSenteciaDevolver;
+		contieneSentenciaDevolver=true;
 	}
 
-	/*Setter tipoSentenciaDevolver*/
-	public void setTipoSenteciaDevolver(TypeIF tipoSenteciaDevolver) {
-		this.tipoSenteciaDevolver = tipoSenteciaDevolver;
+	/*Getter contiene sentencia devolver*/
+	public boolean isContieneSentenciaDevolver() {
+		return contieneSentenciaDevolver;
 	}
+	
+	
 
 }

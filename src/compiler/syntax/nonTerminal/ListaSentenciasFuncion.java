@@ -4,31 +4,32 @@ import java.util.ArrayList;
 
 public class ListaSentenciasFuncion extends NonTerminal {
 	
-	private ArrayList<SentenciaDevolver> listaSentenciasDevolver;
+	private boolean contieneSentenciaDevolver;
+	private boolean esRellenoIfFuncion;
 
 	/*Constructor vacío*/
 	public ListaSentenciasFuncion() {
 		super();
-		listaSentenciasDevolver = new ArrayList<SentenciaDevolver>();
+		contieneSentenciaDevolver = false;
+		esRellenoIfFuncion = false;
 	}
 
-	/*Getter para la lista*/
-	public ArrayList<SentenciaDevolver> getListaSentenciaFuncion() {
-		return listaSentenciasDevolver;
+	public boolean isContieneSentenciaDevolver() {
+		return contieneSentenciaDevolver;
+	}
+
+	public void setContieneSentenciaDevolver(boolean contieneSentenciaDevolver) {
+		this.contieneSentenciaDevolver = contieneSentenciaDevolver;
+	}
+
+	public boolean isEsRellenoIfFuncion() {
+		return esRellenoIfFuncion;
+	}
+
+	public void setEsRellenoIfFuncion(boolean esRellenoIfFuncion) {
+		this.esRellenoIfFuncion = esRellenoIfFuncion;
 	}
 	
-	/*Aniadir un elemento a la lista*/
-	public void addElemento(SentenciaDevolver s) {
-		listaSentenciasDevolver.add(s);
-	}
-	
-	public void addAllLista(ArrayList<SentenciaDevolver> listaAdicional) {
-		listaSentenciasDevolver.addAll(listaAdicional);
-	}
-	
-	public boolean isEmptyListaSentenciaDeDevolver() {
-		return listaSentenciasDevolver.isEmpty();
-	}
 	
 
 }
