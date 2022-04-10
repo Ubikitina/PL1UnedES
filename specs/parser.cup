@@ -385,23 +385,25 @@ selectorvalororeferencia ::=  PARAMETROVALOR IDEN:id {:
 
 defvariables ::= listavariables:listVariables DELIMFUNC tipovariable:tipo puntoycomaopcional defvariables:listVariable {:
 	// Comprobar que ningun variable de la lista existe
-	ArrayList<Selectorvalororeferencia> listaNuevasVariables = listVariables.getListaV();
-	for (int x = 0; x < listaNuevasVariables.size(); x++) { 
-		if(listaNuevasVariables.get(x).getId() != null){
-			errorSiExisteSimbolo(listaNuevasVariables.get(x).getId(), 0); //TODO linea que causa el error pendiente de hacer
-		}else{
-			semanticErrorManager.semanticFatalError("Se ha utilizado una expresion no admitida en la declaracion de variables de la seccion de variables, declaracion de funciones o declaracion de procedimientos.");
-		}
-	} 
+	//ArrayList<Selectorvalororeferencia> listaNuevasVariables = listVariables.getListaV();
+	//for (int x = 0; x < listaNuevasVariables.size(); x++) { 
+	//	if(listaNuevasVariables.get(x).getId() != null){
+	//		errorSiExisteSimbolo(listaNuevasVariables.get(x).getId(), 0); //TODO linea que causa el error pendiente de hacer
+	//	}else{
+	//		semanticErrorManager.semanticFatalError("Se ha utilizado una expresion no admitida en la declaracion de variables de la seccion de variables, declaracion de funciones o declaracion de procedimientos.");
+	//	}
+	//} 
 
-	// Como ninguno de la lista existe, añado las variables a defvariables y devuelvo defvariables
-	if(listVariable == null){ // Si el hashmap de Tipo-ListaVariables esta vacio
-		RESULT = new Defvariables(tipo.getTipo(), (ArrayList<Selectorvalororeferencia>)(listVariables.getListaV()));
-	} else { // Si el hashmap de Tipo-ListaVariables contiene elementos
+	// Añado las variables a defvariables y devuelvo defvariables
+	if(listVariable == null){ // Si la lista esta vacia, creamos nueva
+		RESULT = new Defvariables(tipo.getTipo(), (ArrayList<Selectorvalororeferencia>)(listVariables.getListaV())); 
+	} else { // Si la lista contiene elementos, añadimos elementos
 		listVariable.putParTipoVariable(tipo.getTipo(), (ArrayList<Selectorvalororeferencia>)(listVariables.getListaV()));
 		RESULT = listVariable;
 	}
-:} | epsilon; 
+:} | epsilon {:
+	RESULT = new Defvariables();
+:}; 
 
 listavariables ::= selectorvalororeferencia:selector DIDENTIFICADORES listavariables:listaV {:
 	listaV.addElemento(selector);
@@ -517,7 +519,7 @@ funcion ::= DECLAREFUNCION IDEN:id PIZQUIERDO defvariables:listaVar PDERECHO DEL
 	typeTable.addType(id.getLexema().toUpperCase(), tf);
 	SymbolFunction sf = new SymbolFunction(scope, id.getLexema().toUpperCase(), tf, tipo.getNombre_tipo(), listaVar.getListaVariablesConTipo());
 	symbolTable.addSymbol(id.getLexema().toUpperCase(), sf);
-
+	
 	// Creamos el ambito con el nombre de la funcion y emitimos el mensaje de comprobación
 	scopeManager.openScope(id.getLexema().toUpperCase());
 	scope = scopeManager.getCurrentScope();
@@ -535,6 +537,7 @@ funcion ::= DECLAREFUNCION IDEN:id PIZQUIERDO defvariables:listaVar PDERECHO DEL
 		// Recorremos la lista e introducimos las variables en la tabla de simbolos
 		for(int x = 0; x < listaAux.size(); x++){
 			Selectorvalororeferencia variable = listaAux.get(x);
+			// Comprobamos si la tabla de simbolos contiene el simbolo
 			errorSiExisteSimbolo(variable.getId(), 0); //TODO la linea no esta definida aqui
 
 			// Comprobacion de que no se pasa por valor ningun vector completo, esta prohibido
@@ -547,7 +550,7 @@ funcion ::= DECLAREFUNCION IDEN:id PIZQUIERDO defvariables:listaVar PDERECHO DEL
 			symbolTable.addSymbol(symbol);
 		}
 	}
-
+	
 	// Comprobar que exista el tipo de retorno. Para ello, si no lo contiene, lanzaremos un error.
 	if(!scopeManager.containsType(tipo.getNombre_tipo())){
 		semanticErrorManager.semanticFatalError("Tipo " + tipo.getNombre_tipo() + " de retorno de funcion no existe, error.");
@@ -905,9 +908,17 @@ listaSentenciasFuncion ::= sentenciaFuncion:sent listaSentenciasFuncion:listaSen
  *======================IF========================*
  *================================================*/
 
-sentenciaif ::= COMIENZOSI expresion  STARTIF DELIMFUNC listaSentencias rellenoif  FINBLOQUESENTENCIAS COMIENZOSI DSENTENCIAS ;
+sentenciaif ::= COMIENZOSI:c expresion:ex  STARTIF DELIMFUNC listaSentencias rellenoif {:
+	if(!ex.getTipo().getName().equals("BOOLEANO")){
+		semanticErrorManager.semanticFatalError("La expresion que determina la condicion en la sentencia if de la linea "+ c.getLine() + " no se trata de una expresion logica.");
+	}
+:} FINBLOQUESENTENCIAS COMIENZOSI DSENTENCIAS ;
 
-sentenciaifFuncion ::= COMIENZOSI expresion  STARTIF DELIMFUNC listaSentenciasFuncion:listaSent rellenoifFuncion:listaRelleno {:
+sentenciaifFuncion ::= COMIENZOSI:c expresion:ex  STARTIF DELIMFUNC listaSentenciasFuncion:listaSent rellenoifFuncion:listaRelleno {:
+	if(!ex.getTipo().getName().equals("BOOLEANO")){
+		semanticErrorManager.semanticFatalError("La expresion que determina la condicion en la sentencia if de la linea "+ c.getLine() + " no se trata de una expresion logica.");
+	}
+	
 	Sentencia sent = new Sentencia();
 	sent.setListaSentencias(listaSent.getListaSentenciaFuncion());
 	sent.addAllLista(listaRelleno.getListaSentenciaFuncion());
