@@ -292,16 +292,11 @@ deftipos ::=IDEN:id ASIGNACION DECLVECTOR CIZQUIERDO valorango:rangoInferior RAN
 		if(rangoInferior.isNum()){ // Si es un numero constante, cogemos directamente su valor
 			numInferior = rangoInferior.getNum();
 		}else if (rangoInferior.isIden()){ // Si es un identificador
-			// Miramos si la tabla de simbolos contiene el simbolo, nos esperamos que lo haga. 
-			if(scopeManager.containsSymbol(rangoInferior.getId())){
-				SymbolIF symbol = scopeManager.searchSymbol(rangoInferior.getId()); // Obtenemos el simbolo
-				if(symbol instanceof SymbolConstant && symbol.getType().getName().equals("ENTERO")){ //El simbolo tiene que ser constante y entero
-					numInferior = ((SymbolConstant)symbol).getNum_value(); // Desde la propia tabla de simbolos obtenemos el valor numerico de este simbolo
-				}else {
-				semanticErrorManager.semanticFatalError("El simbolo "+rangoInferior.getId()+" no corresponde a una constante de tipo entero."); 
-				}
-			} else {
-				semanticErrorManager.semanticFatalError("El simbolo "+rangoInferior.getId()+" no esta contenido en la tabla de simbolos."); 
+			SymbolIF symbol = scopeManager.searchSymbol(rangoInferior.getId()); // Obtenemos el simbolo
+			if(symbol instanceof SymbolConstant){ //El simbolo tiene que ser constante
+				numInferior = ((SymbolConstant)symbol).getNum_value(); // Desde la propia tabla de simbolos obtenemos el valor numerico de este simbolo
+			}else {
+				semanticErrorManager.semanticFatalError("El simbolo "+rangoInferior.getId()+" no corresponde a una constante."); 
 			}
 		}else if (rangoInferior.isMiembrovector()){ // Si es un miembro de vector, no puede ser utilizado en la definicion de tipos
 			semanticErrorManager.semanticFatalError("El simbolo "+rangoInferior.getId()+" no corresponde a una constante de tipo entero."); 
@@ -347,8 +342,31 @@ tipovector ::=BOOLEANO {:
 valorango ::= NUM:valor_num {:
 	RESULT = new Valorango(Integer.parseInt(valor_num.getLexema().toUpperCase()));
 :} | IDEN:id {:
+	// Comprobamos que el simbolo este incluido en la tabla de simbolos
+	if(!scopeManager.containsSymbol(id.getLexema().toUpperCase())){
+		semanticErrorManager.semanticFatalError("El simbolo "+id.getLexema().toUpperCase()+" en linea " + id.getLine() +" no esta contenido en la tabla de simbolos."); 
+	}
+	
+	// Comprobamos que el simbolo sea un entero
+	SymbolIF symbol = scopeManager.searchSymbol(id.getLexema().toUpperCase()); // Obtenemos el simbolo
+	if(!symbol.getType().equals(scopeManager.searchType("ENTERO"))){ //El simbolo tiene que ser entero
+		semanticErrorManager.semanticFatalError("El simbolo "+id.getLexema().toUpperCase() + " en linea " + id.getLine() +" no corresponde a un entero."); 
+	}
+	
 	RESULT = new Valorango(id.getLexema().toUpperCase(), true, false);
-:} | miembrovector:m {: //TODO no se si esta bien porque deberiamos de coger el valor del miembrovector, no su identificador
+
+:} | miembrovector:m {:
+	// No comprobamos que el simbolo este incluido en la tabla de simbolos porque esto ya se hace en la regla de miembrovector
+	// Comprobamos que el valor almacenado en este vector (miembrovector) sea entero, ya que valorango tiene que ser un entero
+	TypeIF tipoVector = scopeManager.searchSymbol(m.getId()).getType();
+	if(tipoVector instanceof TypeArray){
+		if(!((TypeArray)tipoVector).getTipo().getTipo().equals(scopeManager.searchType("ENTERO"))){ // Si no es de tipo entero, emitimos un error
+			semanticErrorManager.semanticFatalError("El tipo del miembro del vector que ejerce de rango en otro miembro de un vector (ejemplo v1[v2[1]]) no corresponde a un entero.");
+		}
+	}else{
+		semanticErrorManager.semanticFatalError("El tipo del miembro del vector no corresponde a TypeArray.");
+	}
+
 	RESULT = new Valorango(m.getId(), false, true);
 :};
 
@@ -402,7 +420,7 @@ listavariables ::= selectorvalororeferencia:selector DIDENTIFICADORES listavaria
 	RESULT = new Listavariables(selector);
 :} | epsilon ;
 
-seccionvariables ::= DECLVARIABLES defvariables:listVariables {: 
+seccionvariables ::= DECLVARIABLES:dc defvariables:listVariables {: 
 	// Obtenemos el ambito y la tabla de simbolos
 	ScopeIF scope = scopeManager.getCurrentScope();
 	SymbolTableIF symbolTable = scope.getSymbolTable();
@@ -418,7 +436,7 @@ seccionvariables ::= DECLVARIABLES defvariables:listVariables {:
 			semanticErrorManager.semanticFatalError("Se ha detectado una notacion de declaracion de variable no autorizada. Asegurar que todas las variables sean declaradas con identificadores.");
 		}else{ // Si no es null, es un IDEN
 			if(variable.isPorValor()){ //comprobamos que es por valor				
-				errorSiExisteSimbolo(variable.getId(), 0); //TODO el numero de linea no esta definida aqui
+				errorSiExisteSimbolo(variable.getId(), dc.getLine());
 				SymbolVariable symbol = new SymbolVariable(scope, variable.getId(), variable.getTipo());
 				symbolTable.addSymbol(symbol);
 			}else{ // si no es por valor, lanzamos error
@@ -476,7 +494,7 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id PIZQUIERDO defvariables:listaVar
 		// Recorremos la lista e introducimos las variables en la tabla de simbolos
 		for(int x = 0; x < listaAux.size(); x++){
 			Selectorvalororeferencia variable = listaAux.get(x);
-			errorSiExisteSimbolo(variable.getId(), 0); //TODO la linea no esta definida aqui
+			errorSiExisteSimbolo(variable.getId(), id.getLine());
 
 			// Comprobacion de que no se pasa por valor ningun vector completo, esta prohibido
 			if(variable.isPorValor() && variable.getTipo() instanceof TypeArray){
@@ -528,7 +546,7 @@ funcion ::= DECLAREFUNCION IDEN:id PIZQUIERDO defvariables:listaVar PDERECHO DEL
 		for(int x = 0; x < listaAux.size(); x++){
 			Selectorvalororeferencia variable = listaAux.get(x);
 			// Comprobamos si la tabla de simbolos contiene el simbolo
-			errorSiExisteSimbolo(variable.getId(), 0); //TODO la linea no esta definida aqui
+			errorSiExisteSimbolo(variable.getId(), id.getLine());
 
 			// Comprobacion de que no se pasa por valor ningun vector completo, esta prohibido
 			if(variable.isPorValor() && variable.getTipo() instanceof TypeArray){
@@ -728,21 +746,38 @@ expresionlvl5 ::= PIZQUIERDO expresion:expr PDERECHO {:
  *================================================*/
 
 // Acceso a vectores
-miembrovector::= IDEN:id CIZQUIERDO valorango CDERECHO {: //TODO aqui deberia de comparar que el numero de valorango entre dentro de los limites del rango del tipo de vector
-	// Comprobamos si el miembrovector esta previametne incluido en la tabla de simbolos
-	if(scopeManager.containsSymbol(id.getLexema().toUpperCase())){
-		Miembrovector mv = new Miembrovector(id.getLexema().toUpperCase());
-		TypeIF tipoMiembroVector = (scopeManager.searchSymbol(id.getLexema().toUpperCase())).getType();
-		if(tipoMiembroVector instanceof TypeArray){
-			mv.setTipo(((TypeArray)tipoMiembroVector).getTipo().getTipo()); // Obtenemos el tipo y establecemos al mv
-			RESULT = mv;
+miembrovector::= IDEN:id CIZQUIERDO valorango:vr CDERECHO {:
+	// Comprobamos si el miembrovector esta previamente incluido en la tabla de simbolos
+	if(!scopeManager.containsSymbol(id.getLexema().toUpperCase())){
+		semanticErrorManager.semanticFatalError("El simbolo "+ id.getLexema().toUpperCase()+ " no esta contenido en la tabla de simbolos."); 
+	}
+
+	// Obtenemos el tipo del vector
+	TypeIF tipoVector = (scopeManager.searchSymbol(id.getLexema().toUpperCase())).getType();
+
+	// En el caso de que valorango sea un numero, comprobamos que valorango este dentro del rango inferior y superior del vector
+	if(vr.isNum()){
+		if(tipoVector instanceof TypeArray){
+			int indiceAcceder = vr.getNum();
+			int rangoInferior = ((TypeArray)tipoVector).getRangoInferior();
+			int rangoSuperior = ((TypeArray)tipoVector).getRangoSuperior();
+			
+			if(!(indiceAcceder <= rangoSuperior && indiceAcceder >= rangoInferior)){
+				semanticErrorManager.semanticFatalError("El indice al que se quiere acceder en el vector "+ id.getLexema().toUpperCase()+ " en la linea "+ id.getLine() + " no esta contenido dentro de los limites del rango del tipo del vector.");
+			}
 		}else{
 			semanticErrorManager.semanticFatalError("El simbolo "+ id.getLexema().toUpperCase()+ " no es una instancia de TypeArray.");
 		}
-		
-	} else {
-		semanticErrorManager.semanticFatalError("El simbolo "+ id.getLexema().toUpperCase()+ " no esta contenido en la tabla de simbolos."); 
-	}	
+	}
+
+	// Creamos el miembro del vector y establecemos su tipo
+	Miembrovector mv = new Miembrovector(id.getLexema().toUpperCase());
+	if(tipoVector instanceof TypeArray){
+		mv.setTipo(((TypeArray)tipoVector).getTipo().getTipo()); // Obtenemos el tipo de los miembros del vector y establecemos al mv
+		RESULT = mv;
+	}else{
+		semanticErrorManager.semanticFatalError("El simbolo "+ id.getLexema().toUpperCase()+ " no es una instancia de TypeArray.");
+	}
 :};
 
 /*================================================*
@@ -848,7 +883,7 @@ sentencia ::= sentenciadeasignacion | sentenciaif | sentenciafor | sentenciaEscr
 
 listaSentencias ::= sentencia  listaSentencias | epsilon;
 
-sentenciaFuncion ::= sentenciadeasignacion {: //TODO todas las sentencias excepto los aspectos de devolver que ya estan hechos
+sentenciaFuncion ::= sentenciadeasignacion {:
 	RESULT = new Sentencia();
 :} | sentenciaifFuncion:sIf {:
 	RESULT = sIf;
