@@ -48,7 +48,7 @@ action code {:
 	// Metodo para comprobar si existe un tipo
 	public void errorSiExisteTipo(String id, int linea){ 
 		if(scopeManager.containsType(id)){
-			semanticErrorManager.semanticFatalError("Simbolo " + id + " en la linea " + linea + " declarado anteriormente, error.");
+			semanticErrorManager.semanticFatalError("Identificador " + id + " en la linea " + linea + " declarado anteriormente, error.");
 		}
 	}
 	
@@ -235,24 +235,24 @@ defconstantes ::=   IDEN:id ASIGNACION valorconstante:valor DSENTENCIAS {:
 	// Comprobamos si la tabla de simbolos contiene el simbolo
 	if(tablaSimbolos.containsSymbol(id.getLexema().toUpperCase())){
 		semanticErrorManager.semanticFatalError("Constante " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " declarada anteriormente, error.");
-	} else {
-		semanticErrorManager.semanticDebug("Constante " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " no declarada.");
-
-		// Introducimos la constante en la tabla de simbolos
-		if(valor.esNumero()){ // si es numero lo aniadimos como numero
-			TypeIF t_entero = scopeManager.searchType("ENTERO");
-			SymbolConstant simboloConstante = new SymbolConstant(scope, id.getLexema().toUpperCase(), valor.getValor_num(), t_entero);
-			tablaSimbolos.addSymbol(simboloConstante);
-			semanticErrorManager.semanticDebug("Constante " + id.getLexema().toUpperCase() + " con valor " + valor.getValor_num() + "  declarada.");
-		}else{ // si no, es booleano, y lo aniadimos como booleano
-			TypeIF t_booleano = scopeManager.searchType("BOOLEANO");
-			SymbolConstant simboloConstante = new SymbolConstant(scope, id.getLexema().toUpperCase(), valor.getValor_bool(), t_booleano);
-			tablaSimbolos.addSymbol(simboloConstante);
-			semanticErrorManager.semanticDebug("Constante " + id.getLexema().toUpperCase() + " con valor " + valor.getValor_bool() + "  declarada.");
-		}
-
 	}
+	// Comprobamos si la tabla de tipos contiene el identificador.
+	errorSiExisteTipo(id.getLexema().toUpperCase(), id.getLine());
 
+	semanticErrorManager.semanticDebug("Constante " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " no declarada.");
+
+	// Introducimos la constante en la tabla de simbolos
+	if(valor.esNumero()){ // si es numero lo aniadimos como numero
+		TypeIF t_entero = scopeManager.searchType("ENTERO");
+		SymbolConstant simboloConstante = new SymbolConstant(scope, id.getLexema().toUpperCase(), valor.getValor_num(), t_entero);
+		tablaSimbolos.addSymbol(simboloConstante);
+		semanticErrorManager.semanticDebug("Constante " + id.getLexema().toUpperCase() + " con valor " + valor.getValor_num() + "  declarada.");
+	}else{ // si no, es booleano, y lo aniadimos como booleano
+		TypeIF t_booleano = scopeManager.searchType("BOOLEANO");
+		SymbolConstant simboloConstante = new SymbolConstant(scope, id.getLexema().toUpperCase(), valor.getValor_bool(), t_booleano);
+		tablaSimbolos.addSymbol(simboloConstante);
+		semanticErrorManager.semanticDebug("Constante " + id.getLexema().toUpperCase() + " con valor " + valor.getValor_bool() + "  declarada.");
+	}
 
 :} defconstantes | epsilon; 
 
@@ -277,60 +277,66 @@ deftipos ::=IDEN:id ASIGNACION DECLVECTOR CIZQUIERDO valorango:rangoInferior RAN
 	ScopeIF scope = scopeManager.getCurrentScope();
 	TypeTableIF tablaTipos = scope.getTypeTable();
 
-	// Comprobamos si el tipo estaba declarado anteriormente, para emitir error si es asi.
+	// Emitimos error si el tipo estaba declarado anteriormente.
 	if(scopeManager.containsType(id.getLexema().toUpperCase())){ 
 		semanticErrorManager.semanticFatalError("Tipo " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " incluido en la tabla de tipos anteriormente, error.");
-	} else { // Si el tipo no estaba declarado anteriormente
-		
-		// Comprobamos que tanto el rango inferior como el rango superior sean constantes y obtenemos sus valores.
-
-		// Para ello, primero declaramos dos enteros auxiliares
-		int numInferior = 0;
-		int numSuperior = 0;
-
-		// Comprobación para el rango inferior
-		if(rangoInferior.isNum()){ // Si es un numero constante, cogemos directamente su valor
-			numInferior = rangoInferior.getNum();
-		}else if (rangoInferior.isIden()){ // Si es un identificador
-			SymbolIF symbol = scopeManager.searchSymbol(rangoInferior.getId()); // Obtenemos el simbolo
-			if(symbol instanceof SymbolConstant){ //El simbolo tiene que ser constante
-				numInferior = ((SymbolConstant)symbol).getNum_value(); // Desde la propia tabla de simbolos obtenemos el valor numerico de este simbolo
-			}else {
-				semanticErrorManager.semanticFatalError("El simbolo "+rangoInferior.getId()+" no corresponde a una constante."); 
-			}
-		}else if (rangoInferior.isMiembrovector()){ // Si es un miembro de vector, no puede ser utilizado en la definicion de tipos
-			semanticErrorManager.semanticFatalError("El simbolo "+rangoInferior.getId()+" no corresponde a una constante de tipo entero."); 
-		}
-
-		// Comprobacion para el rango superior
-		if(rangoSuperior.isNum()){ // Si es un numero constante, cogemos directamente su valor
-			numSuperior = rangoSuperior.getNum();
-		}else if (rangoSuperior.isIden()){ // Si es un identificador
-			// Miramos si la tabla de simbolos contiene el simbolo, nos esperamos que lo haga. 
-			if(scopeManager.containsSymbol(rangoSuperior.getId())){
-				SymbolIF symbol = scopeManager.searchSymbol(rangoSuperior.getId()); // Obtenemos el simbolo
-				if(symbol instanceof SymbolConstant && symbol.getType().getName().equals("ENTERO")){ //El simbolo tiene que ser constante y entero
-					numSuperior = ((SymbolConstant)symbol).getNum_value(); // Desde la propia tabla de simbolos obtenemos el valor numerico de este simbolo
-				}else {
-				semanticErrorManager.semanticFatalError("El simbolo "+rangoSuperior.getId()+" no corresponde a una constante de tipo entero."); 
-				}
-			} else {
-				semanticErrorManager.semanticFatalError("El simbolo "+rangoSuperior.getId()+" no esta contenido en la tabla de simbolos."); 
-			}
-		}else if (rangoSuperior.isMiembrovector()){ // Si es un miembro de vector, no puede ser utilizado en la definicion de tipos
-			semanticErrorManager.semanticFatalError("El simbolo "+rangoSuperior.getId()+" no corresponde a una constante de tipo entero."); 
-		}
-
-		// Ahora que hemos obtenido los numeros, procedemos a crear el tipo
-		if(numSuperior > numInferior){ // Solo crearemos el tipo si el rango superior es mayor que el inferior
-			// Creamos el tipo
-			TypeIF t_vector_nuevo = new TypeArray(scope, id.getLexema().toUpperCase(), numInferior, numSuperior, tipov);
-			tablaTipos.addType(t_vector_nuevo); // Introducimos el tipo en la tabla de tipos
-			semanticErrorManager.semanticDebug("Tipo " + id.getLexema().toUpperCase() + " con [" + ((TypeArray)t_vector_nuevo).imprimir() + "] aniadido a la tabla de tipos.");		
-		} else { // Emitimos error si los rangos no encajan
-			semanticErrorManager.semanticFatalError("El rango superior del vector " + id.getLexema().toUpperCase() + " es mayor que el rango inferior.");
-		}
 	}
+	
+	// Emitimos error si el identificador está incluido en la tabla de simbolos anteriormente.
+	if(scopeManager.containsSymbol(id.getLexema().toUpperCase())){
+		semanticErrorManager.semanticFatalError("Simbolo " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " incluido en la tabla de simbolos anteriormente, error.");
+	}
+	
+	
+	// Comprobamos que tanto el rango inferior como el rango superior sean constantes y obtenemos sus valores.
+
+	// Para ello, primero declaramos dos enteros auxiliares
+	int numInferior = 0;
+	int numSuperior = 0;
+
+	// Comprobación para el rango inferior
+	if(rangoInferior.isNum()){ // Si es un numero constante, cogemos directamente su valor
+		numInferior = rangoInferior.getNum();
+	}else if (rangoInferior.isIden()){ // Si es un identificador
+		SymbolIF symbol = scopeManager.searchSymbol(rangoInferior.getId()); // Obtenemos el simbolo
+		if(symbol instanceof SymbolConstant){ //El simbolo tiene que ser constante
+			numInferior = ((SymbolConstant)symbol).getNum_value(); // Desde la propia tabla de simbolos obtenemos el valor numerico de este simbolo
+		}else {
+			semanticErrorManager.semanticFatalError("El simbolo "+rangoInferior.getId()+" no corresponde a una constante."); 
+		}
+	}else if (rangoInferior.isMiembrovector()){ // Si es un miembro de vector, no puede ser utilizado en la definicion de tipos
+		semanticErrorManager.semanticFatalError("El simbolo "+rangoInferior.getId()+" no corresponde a una constante de tipo entero."); 
+	}
+
+	// Comprobacion para el rango superior
+	if(rangoSuperior.isNum()){ // Si es un numero constante, cogemos directamente su valor
+		numSuperior = rangoSuperior.getNum();
+	}else if (rangoSuperior.isIden()){ // Si es un identificador
+		// Miramos si la tabla de simbolos contiene el simbolo, nos esperamos que lo haga. 
+		if(scopeManager.containsSymbol(rangoSuperior.getId())){
+			SymbolIF symbol = scopeManager.searchSymbol(rangoSuperior.getId()); // Obtenemos el simbolo
+			if(symbol instanceof SymbolConstant && symbol.getType().getName().equals("ENTERO")){ //El simbolo tiene que ser constante y entero
+				numSuperior = ((SymbolConstant)symbol).getNum_value(); // Desde la propia tabla de simbolos obtenemos el valor numerico de este simbolo
+			}else {
+			semanticErrorManager.semanticFatalError("El simbolo "+rangoSuperior.getId()+" no corresponde a una constante de tipo entero."); 
+			}
+		} else {
+			semanticErrorManager.semanticFatalError("El simbolo "+rangoSuperior.getId()+" no esta contenido en la tabla de simbolos."); 
+		}
+	}else if (rangoSuperior.isMiembrovector()){ // Si es un miembro de vector, no puede ser utilizado en la definicion de tipos
+		semanticErrorManager.semanticFatalError("El simbolo "+rangoSuperior.getId()+" no corresponde a una constante de tipo entero."); 
+	}
+
+	// Ahora que hemos obtenido los numeros, procedemos a crear el tipo
+	if(numSuperior > numInferior){ // Solo crearemos el tipo si el rango superior es mayor que el inferior
+		// Creamos el tipo
+		TypeIF t_vector_nuevo = new TypeArray(scope, id.getLexema().toUpperCase(), numInferior, numSuperior, tipov);
+		tablaTipos.addType(t_vector_nuevo); // Introducimos el tipo en la tabla de tipos
+		semanticErrorManager.semanticDebug("Tipo " + id.getLexema().toUpperCase() + " con [" + ((TypeArray)t_vector_nuevo).imprimir() + "] aniadido a la tabla de tipos.");		
+	} else { // Emitimos error si los rangos no encajan
+		semanticErrorManager.semanticFatalError("El rango superior del vector " + id.getLexema().toUpperCase() + " es mayor que el rango inferior.");
+	}
+	
 :} deftipos | epsilon;
 
 tipovector ::=BOOLEANO {:
@@ -401,7 +407,10 @@ selectorvalororeferencia ::=  PARAMETROVALOR IDEN:id {: // Paso por referencia
 	RESULT = svor;
 :};
 
-defvariables ::= listavariables:listVariables DELIMFUNC tipovariable:tipo puntoycomaopcional defvariables:listVariable {:
+defvariables ::= listavariables:listVariables DELIMFUNC:d tipovariable:tipo puntoycomaopcional defvariables:listVariable {:
+	if( !(tipo.getTipo() instanceof TypeArray || tipo.getTipo() instanceof TypeSimple) ){
+		semanticErrorManager.semanticFatalError("El tipo " + tipo.getTipo().getName() + " en linea " + d.getLine() + " no es TypeArray o TypeSimple.");
+	}
 	// Añado las variables a defvariables y devuelvo defvariables
 	if(listVariable == null){ // Si la lista esta vacia, creamos nueva
 		RESULT = new Defvariables(tipo.getTipo(), (ArrayList<Selectorvalororeferencia>)(listVariables.getListaV())); 
@@ -431,14 +440,15 @@ seccionvariables ::= DECLVARIABLES:dc defvariables:listVariables {:
 
 	ArrayList<Selectorvalororeferencia> listaAux = listVariables.getListaVariablesConTipo();
 
-	// vamos recorriendo cada elemento de la lista de Selectorvalororeferencia
+	// Vamos recorriendo cada elemento de la lista de Selectorvalororeferencia
 	for(int x = 0; x < listaAux.size(); x++){
 		Selectorvalororeferencia variable = listaAux.get(x); // obtenemos cada Selectorvalororeferencia
 		if(variable.getId() == null){ // Si es null, no es un IDEN por lo que lanzamos error
 			semanticErrorManager.semanticFatalError("Se ha detectado una notacion de declaracion de variable no autorizada. Asegurar que todas las variables sean declaradas con identificadores.");
 		}else{ // Si no es null, es un IDEN
 			if(variable.isPorValor()){ //comprobamos que es por valor				
-				errorSiExisteSimbolo(variable.getId(), dc.getLine());
+				errorSiExisteSimbolo(variable.getId(), dc.getLine()); // Error si existe en la tabla de simbolos
+				errorSiExisteTipo(variable.getId(), dc.getLine()); // Error si existe en la tabla de tipos
 				SymbolVariable symbol = new SymbolVariable(scope, variable.getId(), variable.getTipo());
 				symbolTable.addSymbol(symbol);
 			}else{ // si no es por valor, lanzamos error
