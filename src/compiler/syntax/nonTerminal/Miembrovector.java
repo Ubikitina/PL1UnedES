@@ -27,6 +27,4 @@ public class Miembrovector extends NonTerminal {
 	public void setTipo(TypeIF tipo) {
 		this.tipo = tipo;
 	}
-	
-
 }
