@@ -393,9 +393,9 @@ tipovariable ::= BOOLEANO {:
 	}
 :};
 
-selectorvalororeferencia ::=  PARAMETROVALOR IDEN:id {:
+selectorvalororeferencia ::=  PARAMETROVALOR IDEN:id {: // Paso por referencia
 	RESULT = new Selectorvalororeferencia(id.getLexema().toUpperCase(), false);
-:} | expresion:ex {:
+:} | expresion:ex {: // Paso por valor
 	Selectorvalororeferencia svor = new Selectorvalororeferencia(ex.getId(), true);
 	svor.setTipo(ex.getTipo());
 	RESULT = svor;
@@ -771,6 +771,22 @@ miembrovector::= IDEN:id CIZQUIERDO valorango:vr CDERECHO {:
 			semanticErrorManager.semanticFatalError("El simbolo "+ id.getLexema().toUpperCase()+ " no es una instancia de TypeArray.");
 		}
 	}
+	// En el caso de que valorango sea un identificador, comprobamos que el identificador sea una constante, y si es una constante, que este dentro del rango inferior y superior del vector
+	if(vr.isIden()){ 
+		if(scopeManager.searchSymbol(vr.getId()) instanceof SymbolConstant){
+			if(tipoVector instanceof TypeArray){
+				int indiceAcceder = ((SymbolConstant)scopeManager.searchSymbol(vr.getId())).getNum_value();
+				int rangoInferior = ((TypeArray)tipoVector).getRangoInferior();
+				int rangoSuperior = ((TypeArray)tipoVector).getRangoSuperior();
+				
+				if(!(indiceAcceder <= rangoSuperior && indiceAcceder >= rangoInferior)){
+					semanticErrorManager.semanticFatalError("El indice al que se quiere acceder en el vector "+ id.getLexema().toUpperCase()+ " en la linea "+ id.getLine() + " no esta contenido dentro de los limites del rango del tipo del vector.");
+				}
+			}else{
+				semanticErrorManager.semanticFatalError("El simbolo "+ id.getLexema().toUpperCase()+ " no es una instancia de TypeArray.");
+			}
+		}
+	}
 
 	// Creamos el miembro del vector y establecemos su tipo
 	Miembrovector mv = new Miembrovector(id.getLexema().toUpperCase());
@@ -801,14 +817,14 @@ parteizquierdaasignacion ::= IDEN:id {:
 	RESULT = pizq;
 :};
 
-sentenciadeasignacion ::= parteizquierdaasignacion:pizq ASIGNACION parametroasignacion:expr DSENTENCIAS {:
+sentenciadeasignacion ::= parteizquierdaasignacion:pizq ASIGNACION:as parametroasignacion:expr DSENTENCIAS {:
 	// La parte izquierda tiene que ser instancia de SymbolVariable o SymbolParameter, y tiene que ser una instancia de tipo simple
 	if((scopeManager.searchSymbol(pizq.getId())instanceof SymbolVariable || scopeManager.searchSymbol(pizq.getId())instanceof SymbolParameter) && (pizq.getTipo() instanceof TypeSimple)){
 		// El tipo de pizq tiene que coincidir con el tipo de expr
 		if(pizq.getTipo().getName().equals(expr.getTipo().getName())){
-			semanticErrorManager.semanticDebug("El tipo de " + pizq.getId()+ " y " + expr.getId() + " coinciden, asignacion OK.");
+			semanticErrorManager.semanticDebug("Asignacion en linea " + as.getLine() + " OK, coinciden los tipos.");
 		}else{
-			semanticErrorManager.semanticFatalError("El tipo de " + pizq.getId()+ " y " + expr.getId() + " no coinciden.");
+			semanticErrorManager.semanticFatalError("Asignacion en linea " + as.getLine() + " erroneo, no coinciden los tipos.");
 		}
 	}else{
 		semanticErrorManager.semanticFatalError(pizq.getId()+ " no puede estar en la parte izquierda de una sentencia de asignacion porque no es o SymbolVariable o SymbolParameter o del tipo TypeSimple.");
@@ -831,8 +847,11 @@ parametrofuncionoproc ::=     listavariables:lv {:
 
 llamadafuncion ::= IDEN:id PIZQUIERDO parametrofuncionoproc:lv PDERECHO {:
 	// Comprobamos si el identificador esta previamente incluido en la tabla de simbolos como SymbolProcedure o SymbolFunction
-	if(!scopeManager.containsSymbol(id.getLexema().toUpperCase()) || !(   scopeManager.searchSymbol(id.getLexema().toUpperCase()) instanceof SymbolProcedure || scopeManager.searchSymbol(id.getLexema().toUpperCase()) instanceof SymbolFunction  )){
-		semanticErrorManager.semanticFatalError("La funcion "+ id.getLexema().toUpperCase()+ " no esta contenido en la tabla de simbolos como funcion o procedimiento."); 
+	if(!scopeManager.containsSymbol(id.getLexema().toUpperCase())){
+		semanticErrorManager.semanticFatalError("El identificador "+ id.getLexema().toUpperCase()+ " en linea "+ id.getLine()+ " no esta contenido en la tabla de simbolos como funcion o procedimiento."); 
+	}
+	if(!(   scopeManager.searchSymbol(id.getLexema().toUpperCase()) instanceof SymbolProcedure || scopeManager.searchSymbol(id.getLexema().toUpperCase()) instanceof SymbolFunction  )){
+		semanticErrorManager.semanticFatalError("El identificador "+ id.getLexema().toUpperCase()+ " en linea "+ id.getLine()+ " no es una funcion o un procedimiento."); 
 	}
 
 	Llamadafuncion lf = new Llamadafuncion(id.getLexema().toUpperCase());
@@ -868,8 +887,18 @@ llamadafuncion ::= IDEN:id PIZQUIERDO parametrofuncionoproc:lv PDERECHO {:
 		Selectorvalororeferencia parametroEsperado = listaParametrosEsperados.get(x);
 		Selectorvalororeferencia parametroPasado = listaParametrosPasados.get(x);
 
+		if(!parametroPasado.isPorValor()){
+			semanticErrorManager.semanticFatalError("Uno de los parametros pasados a "+ id.getLexema().toUpperCase()+ " en linea "+id.getLine()+ " es por referencia. No se puede pasar parametros por referencia en llamadas a funciones.");
+		}
+
 		if(!parametroEsperado.getTipo().getName().equals(parametroPasado.getTipo().getName())){
-			semanticErrorManager.semanticFatalError("Alguno o varios de los tipos u orden de los parametros de "+ id.getLexema().toUpperCase()+ " no corresponde a lo esperado.");
+			semanticErrorManager.semanticFatalError("Alguno o varios de los tipos u orden de los parametros de "+ id.getLexema().toUpperCase()+ " en linea " +id.getLine()+ " no corresponde a lo esperado.");
+		}
+
+		if(!parametroEsperado.isPorValor()){ // Si el parametro esperado es por referencia
+		 	if(parametroPasado.getId() == null){ // El parametro pasado debe ser una variable, sino error
+				 semanticErrorManager.semanticFatalError("Se ha detectado una expresion que no corresponde a una variable en una posicion de paso por referencia en "+ id.getLexema().toUpperCase()+ " en linea " +id.getLine());
+			 }
 		}
 	}
 
