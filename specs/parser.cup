@@ -32,6 +32,9 @@ action code {:
 	ScopeManagerIF       scopeManager         = CompilerContext.getScopeManager ();
 	FinalCodeFactoryIF   finalCodeFactory     = CompilerContext.getFinalCodeFactory ();
 
+	//Lista para almacenar las cuadruplas de cadenas de caracteres
+	List<QuadrupleIF> listaCadenas = new ArrayList<QuadrupleIF>();
+
 	// Metodos creados por mi
 	// Metodo para comprobar si existe un simbolo 
 	public void errorSiExisteSimbolo(String id, int linea){ 
@@ -140,7 +143,7 @@ non terminal puntoycomaopcional;
 
 non terminal Tipovector tiporetornofuncion;
 non terminal seccionsubprograma;
-non terminal defprincipal;
+non terminal Sentencia defprincipal;
 non terminal Selectorvalororeferencia selectorvalororeferencia;
 
 
@@ -164,12 +167,12 @@ non terminal Llamadafuncion llamadafuncion ;
 non terminal Parteizquierdaasignacion parteizquierdaasignacion;  
 non terminal sentenciadeasignacion;
 
-non terminal parametroEscribir ;
-non terminal sentenciaEscribir ;
+non terminal ParametroEscribir parametroEscribir ;
+non terminal Sentencia sentenciaEscribir ;
 
-non terminal sentencia;
+non terminal Sentencia sentencia;
 non terminal Sentencia sentenciaFuncion;
-non terminal listaSentencias;
+non terminal Sentencia listaSentencias;
 non terminal ListaSentenciasFuncion listaSentenciasFuncion;
 non terminal sentenciaif;
 non terminal Sentencia sentenciaifFuncion;
@@ -205,10 +208,19 @@ program ::=
    :}
   axiom:ax
   {: 
+
+		try{
+			System.out.println("Codigo intermedio Axioma: " + ax.getIntermediateCode());
+		}catch(Exception e){
+			System.out.println("Codigo intermedio Axioma: NULL POINTER EXCEPTION");
+		}
+
+
   		// No modificar esta estructura, aunque se pueden añadir más acciones semánticas
   		
-  		//List intermediateCode = ax.getIntermediateCode ();
-  		//finalCodeFactory.create (intermediateCode);
+  		List intermediateCode = ax.getIntermediateCode ();
+		finalCodeFactory.setEnvironment(CompilerContext.getExecutionEnvironment());
+  		finalCodeFactory.create (intermediateCode);
 
   		// En caso de no comentarse las dos sentencias anteriores puede generar una excepcion
   		// en las llamadas a cupTest si el compilador no está completo. Esto es debido a que 
@@ -218,7 +230,17 @@ program ::=
   		syntaxErrorManager.syntaxInfo ("Parsing process ended.");
    :};
 
-axiom ::= defprincipal;
+axiom ::= defprincipal:def {:
+	IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scopeManager.getCurrentScope());	
+	AxiomaProp a = new AxiomaProp();
+	a.setIntermediateCode(def.getIntermediateCode());
+
+	// Cerramos el ambito actual (current scope)
+	scopeManager.closeScope();
+	semanticErrorManager.semanticDebug("Se ha cerrado el ambito actual.");
+
+	RESULT = a;
+:};
 
 epsilon ::=;
 
@@ -506,7 +528,7 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id PIZQUIERDO defvariables:listaVar
 		// Recorremos la lista e introducimos las variables en la tabla de simbolos
 		for(int x = 0; x < listaAux.size(); x++){
 			Selectorvalororeferencia variable = listaAux.get(x);
-			errorSiExisteSimbolo(variable.getId(), id.getLine());
+			errorSiExisteSimbolo(variable.getId(), id.getLine()); //TODO aqui tambien deberia de incluir un errorSiExisteTipo? revisar (y en funcion tambien)
 
 			// Comprobacion de que no se pasa por valor ningun vector completo, esta prohibido
 			if(variable.isPorValor() && variable.getTipo() instanceof TypeArray){
@@ -615,10 +637,8 @@ defprincipal ::= COMIENZOPROGRAMA IDEN:id {:
 	TypeSimple tsBooleano = new TypeSimple(scope, "BOOLEANO");
 	typeTable.addType("BOOLEANO",tsBooleano);
 	
-:} DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO listaSentencias FINBLOQUESENTENCIAS FINPROGRAMA {:
-	// Cerramos el ambito actual (current scope)
-	scopeManager.closeScope();
-	semanticErrorManager.semanticDebug("Se ha cerrado el ambito actual.");
+:} DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO listaSentencias:listaS FINBLOQUESENTENCIAS FINPROGRAMA {:
+	RESULT = listaS;
 :};
 
 /*================================================*
@@ -925,23 +945,57 @@ sentenciallamadafuncion ::= llamadafuncion:lf DSENTENCIAS:d {:
  *===================SENTENCIAS===================*
  *================================================*/
 
-sentencia ::= sentenciadeasignacion | sentenciaif | sentenciafor | sentenciaEscribir | sentenciallamadafuncion ;
+sentencia ::= sentenciadeasignacion{:
+	Sentencia s = new Sentencia();
+	s.setIntermediateCode(new ArrayList());
+	RESULT = s;
+:} | sentenciaif {:
+	Sentencia s = new Sentencia();
+	s.setIntermediateCode(new ArrayList());
+	RESULT = s;
+:} | sentenciafor {:
+	Sentencia s = new Sentencia();
+	s.setIntermediateCode(new ArrayList());
+	RESULT = s;
+:} | sentenciaEscribir:s {:
+	RESULT = s;
+:} | sentenciallamadafuncion {:
+	Sentencia s = new Sentencia();
+	s.setIntermediateCode(new ArrayList());
+	RESULT = s;
+:} ;
 
-listaSentencias ::= sentencia  listaSentencias | epsilon;
+listaSentencias ::= sentencia:s1  listaSentencias:s2list {:
+	Sentencia s = new Sentencia();
+	IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scopeManager.getCurrentScope());
+	cb.addQuadruples(s1.getIntermediateCode());
+	cb.addQuadruples(s2list.getIntermediateCode()); // respetamos el orden
+	s.setIntermediateCode(cb.create());
+	RESULT = s;
+:} | epsilon {:
+	Sentencia s = new Sentencia();
+	s.setIntermediateCode(new ArrayList());
+	RESULT = s;
+:};
 
 sentenciaFuncion ::= sentenciadeasignacion {:
-	RESULT = new Sentencia();
+	Sentencia s = new Sentencia();
+	s.setIntermediateCode(new ArrayList());
+	RESULT = s;
 :} | sentenciaifFuncion:sIf {:
 	RESULT = sIf;
 :} | sentenciaforFuncion:sFor {:
 	RESULT = sFor;
-:} | sentenciaEscribir {:
-	RESULT = new Sentencia();
+:} | sentenciaEscribir:s {:
+	RESULT = s;
 :} | sentenciallamadafuncion {:
-	RESULT = new Sentencia();
+	Sentencia s = new Sentencia();
+	s.setIntermediateCode(new ArrayList());
+	RESULT = s;
 :} | sentenciaDevolver:st {:
 	Sentencia s = new Sentencia();
 	s.setContieneSentenciaDevolver(true);
+	s.setIntermediateCode(new ArrayList());
 	RESULT = s;
 :};
 
@@ -974,6 +1028,7 @@ sentenciaifFuncion ::= COMIENZOSI:c expresion:ex  STARTIF DELIMFUNC listaSentenc
 	if(listaRelleno.isEsRellenoIfFuncion() && listaSent.isContieneSentenciaDevolver() && listaRelleno.isContieneSentenciaDevolver()){
 		sent.setContieneSentenciaDevolver(true);
 	}
+	sent.setIntermediateCode(new ArrayList());
 	RESULT = sent;
 :} FINBLOQUESENTENCIAS COMIENZOSI DSENTENCIAS ;
 
@@ -1025,6 +1080,7 @@ sentenciaforFuncion ::= COMIENZOBUCLEPARA IDEN:id RANGOBUCLEPARA expresion:e1 RA
 
 	// Aunque dentro del bloque de sentencias para contenga una sentencia devuelve, como cabe la posibilidad de que el bucle para no llegue a ejecutarse, debe existir una sentencia del bucle fuera del bloque de sentencias del bucle para. Por lo que dejamos new Sentencia() con la variable contieneDevuelve a false.
 	Sentencia sent = new Sentencia();
+	sent.setIntermediateCode(new ArrayList());
 	RESULT = sent;
 :}FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
 
@@ -1032,13 +1088,62 @@ sentenciaforFuncion ::= COMIENZOBUCLEPARA IDEN:id RANGOBUCLEPARA expresion:e1 RA
  *===================ESCRIBIR=====================*
  *================================================*/
 
-parametroEscribir ::= STRING | expresion:e1 {:
+parametroEscribir ::= STRING:s {:
+	ParametroEscribir p = new ParametroEscribir();
+	p.setEsString(true);
+	p.setCadena(s.getLexema().toUpperCase());
+	RESULT = p;
+:} | expresion:e1 {:
 	if(!(e1.getTipo().equals(scopeManager.searchType("ENTERO")))){
 		semanticErrorManager.semanticFatalError("El tipo del parametro pasado a una de las llamadas escribir() no es de tipo entero, error.");
 	}
-:} | epsilon ;
+	ParametroEscribir p = new ParametroEscribir(); //AQUI quizás tenga más sentido devolver directamente la expresion, porque necesito enviar tambien el codigo intermedio. Pensar un poco en esto.
+	p.setEsNumero(true);
+	RESULT = p;
+:} | epsilon {:
+	ParametroEscribir p = new ParametroEscribir();
+	p.setEsVacio(true);
+	RESULT = p;
+:};
 
-sentenciaEscribir ::= ESCRIBIR PIZQUIERDO parametroEscribir PDERECHO DSENTENCIAS;
+sentenciaEscribir ::= ESCRIBIR PIZQUIERDO parametroEscribir:p PDERECHO DSENTENCIAS {:
+	Sentencia s = new Sentencia();
+	ScopeIF scope = scopeManager.getCurrentScope();
+
+	if(p.isEsString()){
+		TemporalFactory tF = new TemporalFactory(scope);
+		IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
+		String textoEscrito = p.getCadena();
+		LabelFactory lF = new LabelFactory();
+		LabelIF lb = lF.create();
+		TemporalIF temp = tF.create();
+		cb.addQuadruple("ESCRIBCA", temp, lb);
+		// Guardamos la cadena de caracteres en "listacadenas" y recuperamos al final del programa principal
+		listaCadenas.add(new Quadruple("CADENA", new Label(textoEscrito), lb));
+		s.setIntermediateCode(cb.create());
+		System.out.println("Codigo intermedio: " + s.getIntermediateCode());
+		RESULT = s;
+	}
+
+	if(p.isEsNumero()){
+		IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
+		cb.addQuadruples(p.getIntermediateCode()); //aqui es donde busco el codigo de intermedio de lo de arriba.
+		// cb.addQuadruple("ESCRIBENT", p.getTemporal()); //TODO pendiente implementar esto
+		s.setIntermediateCode(cb.create());
+		System.out.println("Codigo intermedio: " + s.getIntermediateCode());
+		RESULT = s;
+	}
+
+	if(p.isEsVacio()){
+		TemporalFactory tF = new TemporalFactory(scope);
+		IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
+		TemporalIF temp = tF.create();
+		cb.addQuadruple("ESCRIBVAC", temp);
+		s.setIntermediateCode(cb.create());
+		System.out.println("Codigo intermedio: " + s.getIntermediateCode());
+		RESULT = s;
+	}
+:};
 
 /*================================================*
  *===================DEVOLVER=====================*
