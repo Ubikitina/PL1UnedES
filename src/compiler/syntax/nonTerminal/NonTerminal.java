@@ -4,21 +4,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 import es.uned.lsi.compiler.intermediate.QuadrupleIF;
+import es.uned.lsi.compiler.intermediate.TemporalIF;
 import es.uned.lsi.compiler.syntax.nonTerminal.NonTerminalIF;
 
 /**
  * Abstract class for non terminals.
  */
-public abstract class NonTerminal
-    implements NonTerminalIF
-{
+public abstract class NonTerminal implements NonTerminalIF {
+	
     private List<QuadrupleIF> intermediateCode;
+    private TemporalIF temporal;
     
     /**
      * Constructor for NonTerminal.
      */
-    public NonTerminal ()
-    {
+    public NonTerminal () {
         super ();
         this.intermediateCode = new ArrayList<QuadrupleIF> ();
     }
@@ -27,8 +27,7 @@ public abstract class NonTerminal
      * Returns the intermediateCode.
      * @return Returns the intermediateCode.
      */
-    public List<QuadrupleIF> getIntermediateCode ()
-    {
+    public List<QuadrupleIF> getIntermediateCode () {
         return intermediateCode;
     }
 
@@ -36,9 +35,26 @@ public abstract class NonTerminal
      * Sets The intermediateCode.
      * @param intermediateCode The intermediateCode to set.
      */
-    public void setIntermediateCode (List<QuadrupleIF> intermediateCode)
-    {
+    public void setIntermediateCode (List<QuadrupleIF> intermediateCode) {
         this.intermediateCode = intermediateCode;
     }
+
+    /**
+     * Returns the temporal.
+     * @return Returns the temporal.
+     */
+	public TemporalIF getTemporal() {
+		return temporal;
+	}
+
+	/**
+     * Sets The temporal.
+     * @param temporal The temporal to set.
+     */
+	public void setTemporal(TemporalIF temporal) {
+		this.temporal = temporal;
+	}
+    
+    
     
 }
