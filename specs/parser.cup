@@ -232,7 +232,15 @@ program ::=
 axiom ::= defprincipal:def {:
 	IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scopeManager.getCurrentScope());	
 	AxiomaProp a = new AxiomaProp();
-	a.setIntermediateCode(def.getIntermediateCode());
+	cb.addQuadruples(def.getIntermediateCode());
+	//Aniadimos las cuadruplas de la lista
+	if(scopeManager.getCurrentScope().getLevel() == 0){
+		for(int i = 0; i < listaCadenas.size(); i++){
+			cb.addQuadruple(listaCadenas.get(i));
+		}
+	}
+	
+	a.setIntermediateCode(cb.create());
 
 	// Cerramos el ambito actual (current scope)
 	scopeManager.closeScope();
@@ -367,7 +375,20 @@ tipovector ::=BOOLEANO {:
 :} ;
 
 valorango ::= NUM:valor_num {:
-	RESULT = new Valorango(Integer.parseInt(valor_num.getLexema().toUpperCase()));
+	//Creamos el Valorango
+	Valorango vr = new Valorango(Integer.parseInt(valor_num.getLexema().toUpperCase()));
+
+	//Codigo intermedio
+	TemporalFactory tf = new TemporalFactory(scopeManager.getCurrentScope());
+	IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scopeManager.getCurrentScope());
+	TemporalIF temp = tf.create();
+	Value valor = new Value(Integer.parseInt(valor_num.getLexema().toUpperCase()));
+	cb.addQuadruple("MV",temp,valor);
+	vr.setTemporal(temp);
+	vr.setIntermediateCode(cb.create());
+	System.out.println("Codigo intermedio: " + vr.getIntermediateCode());
+
+	RESULT = vr;
 :} | IDEN:id {:
 	// Comprobamos que el simbolo este incluido en la tabla de simbolos
 	if(!scopeManager.containsSymbol(id.getLexema().toUpperCase())){
@@ -380,7 +401,25 @@ valorango ::= NUM:valor_num {:
 		semanticErrorManager.semanticFatalError("El simbolo "+id.getLexema().toUpperCase() + " en linea " + id.getLine() +" no corresponde a un entero."); 
 	}
 	
-	RESULT = new Valorango(id.getLexema().toUpperCase(), true, false);
+	Valorango vr = new Valorango(id.getLexema().toUpperCase(), true, false);
+	
+	//Codigo intermedio
+	TemporalFactory tf = new TemporalFactory(scopeManager.getCurrentScope());
+	IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scopeManager.getCurrentScope());
+	TemporalIF temp = tf.create();
+	SymbolIF simbolo = scopeManager.searchSymbol(id.getLexema().toUpperCase());
+	if(simbolo instanceof SymbolConstant){
+		Value valor = new Value(((SymbolConstant)simbolo).getNum_value());
+		cb.addQuadruple("MV", temp, valor);
+	} else if (simbolo instanceof SymbolVariable){
+		Variable var = new Variable(id.getLexema().toUpperCase(), scopeManager.getCurrentScope()); //TODO no deberia de ser expr.getId().getscope() ?
+		cb.addQuadruple("MVP", temp, var);
+	}
+	vr.setTemporal(temp);
+	vr.setIntermediateCode(cb.create());
+	System.out.println("Codigo intermedio: " + vr.getIntermediateCode());
+
+	RESULT = vr;
 
 :} | miembrovector:m {:
 	// No comprobamos que el simbolo este incluido en la tabla de simbolos porque esto ya se hace en la regla de miembrovector
@@ -394,7 +433,13 @@ valorango ::= NUM:valor_num {:
 		semanticErrorManager.semanticFatalError("El tipo del miembro del vector no corresponde a TypeArray.");
 	}
 
-	RESULT = new Valorango(m.getId(), false, true);
+	Valorango vr = new Valorango(m.getId(), false, true);
+
+	// Codigo intermedio
+	vr.setTemporal(m.getTemporal());
+	vr.setIntermediateCode(m.getIntermediateCode());
+
+	RESULT = vr;
 :};
 
 secciontipos ::= COMIENZODECLTIPOS deftipos | epsilon; 
@@ -718,8 +763,14 @@ expresion ::=  expresion:e1 MENORQUE  expresion:e2 {:
 	TemporalFactory tf = new TemporalFactory(scopeManager.getCurrentScope());
 	IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scopeManager.getCurrentScope());
 	TemporalIF temp = tf.create();
-	Variable var = new Variable(id.getLexema().toUpperCase(), scopeManager.getCurrentScope()); //TODO no deberia de ser expr.getId())).getScope()
-	cb.addQuadruple("MVA", temp, var);
+	SymbolIF simbolo = scopeManager.searchSymbol(id.getLexema().toUpperCase());
+	if(simbolo instanceof SymbolConstant){
+		Value valor = new Value(((SymbolConstant)simbolo).getNum_value());
+		cb.addQuadruple("MV", temp, valor);
+	} else if (simbolo instanceof SymbolVariable){
+		Variable var = new Variable(id.getLexema().toUpperCase(), scopeManager.getCurrentScope()); //TODO no deberia de ser expr.getId())).getScope()
+		cb.addQuadruple("MVP", temp, var);
+	}
 	expr.setTemporal(temp);
 	expr.setIntermediateCode(cb.create());
 	System.out.println("Codigo intermedio: " + expr.getIntermediateCode());
@@ -767,6 +818,11 @@ expresion ::=  expresion:e1 MENORQUE  expresion:e2 {:
 :} | miembrovector:mv {:
 	Expresion expr = new Expresion(); // Creamos la expresion
 	expr.setTipo(mv.getTipo());// Establecemos el tipo
+
+	// Codigo intermedio
+	expr.setTemporal(mv.getTemporal());
+	expr.setIntermediateCode(mv.getIntermediateCode());
+
 	RESULT = expr;
 
 :} | NUM:valor_num {:
@@ -930,7 +986,7 @@ expresionlvl5 ::= PIZQUIERDO expresion:expr PDERECHO {:
  *================================================*/
 
 // Acceso a vectores
-miembrovector::= IDEN:id CIZQUIERDO valorango:vr CDERECHO {:
+miembrovector ::= IDEN:id CIZQUIERDO valorango:vr CDERECHO {:
 	// Comprobamos si el miembrovector esta previamente incluido en la tabla de simbolos
 	if(!scopeManager.containsSymbol(id.getLexema().toUpperCase())){
 		semanticErrorManager.semanticFatalError("El simbolo "+ id.getLexema().toUpperCase()+ " no esta contenido en la tabla de simbolos."); 
@@ -972,12 +1028,29 @@ miembrovector::= IDEN:id CIZQUIERDO valorango:vr CDERECHO {:
 
 	// Creamos el miembro del vector y establecemos su tipo
 	Miembrovector mv = new Miembrovector(id.getLexema().toUpperCase());
-	if(tipoVector instanceof TypeArray){
-		mv.setTipo(((TypeArray)tipoVector).getTipo().getTipo()); // Obtenemos el tipo de los miembros del vector y establecemos al mv
-		RESULT = mv;
-	}else{
+	if(!(tipoVector instanceof TypeArray)){ //Si no es instancia de TypeArray lanzamos error
 		semanticErrorManager.semanticFatalError("El simbolo "+ id.getLexema().toUpperCase()+ " no es una instancia de TypeArray.");
 	}
+	mv.setTipo(((TypeArray)tipoVector).getTipo().getTipo()); // Obtenemos el tipo de los miembros del vector y establecemos al mv
+
+	//Codigo intermedio
+	TemporalFactory tf = new TemporalFactory(scopeManager.getCurrentScope());
+	IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scopeManager.getCurrentScope());
+	cb.addQuadruples(vr.getIntermediateCode());
+	TemporalIF temp = tf.create();
+	TemporalIF temp1 = tf.create();
+	TemporalIF temp2 = tf.create();
+	TemporalIF tempPosicion = vr.getTemporal(); // Se trata del desplazamiento que usaremos para cambiar de posicion y acceder diferentes campos del vector
+	SymbolIF simboloVector = scopeManager.searchSymbol(id.getLexema().toUpperCase()); // Obtenemos el simbolo del vector
+	Variable var = new Variable(id.getLexema().toUpperCase(), simboloVector.getScope()); //Creamos una variable para el simbolo del vector
+	cb.addQuadruple("MVA", temp1, var); // Se trata de la direccion base de la variable, donde esta el registro de la primera posicion
+	cb.addQuadruple("ADD", temp2, temp1, tempPosicion); //Sumamos el desplazamiento para acceder a la posicion
+	mv.setTemporal(temp2);
+	mv.setIntermediateCode(cb.create());
+
+	System.out.println("Codigo intermedio: " + mv.getIntermediateCode());
+
+	RESULT = mv;
 :};
 
 /*================================================*
@@ -1010,7 +1083,9 @@ parteizquierdaasignacion ::= IDEN:id {:
 	Parteizquierdaasignacion pizq = new Parteizquierdaasignacion(mv.getId());
 	pizq.setTipo(mv.getTipo());
 
-	// Codigo intermedio //aqui falta
+	// Codigo intermedio 
+	pizq.setTemporal(mv.getTemporal());
+	pizq.setIntermediateCode(mv.getIntermediateCode());
 
 	RESULT = pizq;
 :};
@@ -1305,8 +1380,11 @@ parametroEscribir ::= STRING:s {:
 	if(!(e1.getTipo().equals(scopeManager.searchType("ENTERO")))){
 		semanticErrorManager.semanticFatalError("El tipo del parametro pasado a una de las llamadas escribir() no es de tipo entero, error.");
 	}
-	ParametroEscribir p = new ParametroEscribir(); //AQUI quizás tenga más sentido devolver directamente la expresion, porque necesito enviar tambien el codigo intermedio. Pensar un poco en esto.
+	ParametroEscribir p = new ParametroEscribir(); 
 	p.setEsNumero(true);
+	//Codigo intermedio: en expresion ya tenemos el codigo intermedio creado, tenemos que obtener su codigo intermedio, esatblecerlo al resultado y propagarlo
+	p.setTemporal(e1.getTemporal());
+	p.setIntermediateCode(e1.getIntermediateCode());
 	RESULT = p;
 :} | epsilon {:
 	ParametroEscribir p = new ParametroEscribir();
@@ -1326,7 +1404,7 @@ sentenciaEscribir ::= ESCRIBIR PIZQUIERDO parametroEscribir:p PDERECHO DSENTENCI
 		LabelIF lb = lF.create();
 		TemporalIF temp = tF.create();
 		cb.addQuadruple("ESCRIBCA", temp, lb);
-		// Guardamos la cadena de caracteres en "listacadenas" y recuperamos al final del programa principal
+		// Guardamos la cadena de caracteres en "listaCadenas" y recuperamos al final del programa principal
 		listaCadenas.add(new Quadruple("CADENA", new Label(textoEscrito), lb));
 		s.setIntermediateCode(cb.create());
 		System.out.println("Codigo intermedio: " + s.getIntermediateCode());
@@ -1335,18 +1413,16 @@ sentenciaEscribir ::= ESCRIBIR PIZQUIERDO parametroEscribir:p PDERECHO DSENTENCI
 
 	if(p.isEsNumero()){
 		IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
-		cb.addQuadruples(p.getIntermediateCode()); //aqui es donde busco el codigo de intermedio de lo de arriba.
-		// cb.addQuadruple("ESCRIBENT", p.getTemporal()); //TODO pendiente implementar esto
+		cb.addQuadruples(p.getIntermediateCode()); // busco el codigo de intermedio de lo de arriba
+		cb.addQuadruple("ESCRIBENT", p.getTemporal());
 		s.setIntermediateCode(cb.create());
 		System.out.println("Codigo intermedio: " + s.getIntermediateCode());
 		RESULT = s;
 	}
 
 	if(p.isEsVacio()){
-		TemporalFactory tF = new TemporalFactory(scope);
 		IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
-		TemporalIF temp = tF.create();
-		cb.addQuadruple("ESCRIBVAC", temp);
+		cb.addQuadruple("ESCRIBLN");
 		s.setIntermediateCode(cb.create());
 		System.out.println("Codigo intermedio: " + s.getIntermediateCode());
 		RESULT = s;
