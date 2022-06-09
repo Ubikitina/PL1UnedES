@@ -779,6 +779,11 @@ expresion ::=  expresion:e1 MENORQUE  expresion:e2 {:
 :} | llamadafuncion:lf {:
 	Expresion expr = new Expresion(); // Creamos la expresion
 	expr.setTipo(lf.getTipo());// Establecemos el tipo
+
+	// Codigo intermedio
+	expr.setTemporal(lf.getTemporal());
+	expr.setIntermediateCode(lf.getIntermediateCode());
+
 	RESULT = expr;
 
 :} | CIERTO {:
@@ -1216,6 +1221,17 @@ llamadafuncion ::= IDEN:id PIZQUIERDO parametrofuncionoproc:lv PDERECHO {:
 			 }
 		}
 	}
+
+	// Codigo intermedio
+	// Le damos un 1 como valor de retorno por defecto ya que no se ha implementado esta parte
+	TemporalFactory tf = new TemporalFactory(scopeManager.getCurrentScope());
+	IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scopeManager.getCurrentScope());
+	TemporalIF temp = tf.create();
+	Value valor = new Value(1);
+	cb.addQuadruple("MV", temp, valor);
+	lf.setTemporal(temp);
+	lf.setIntermediateCode(cb.create());
+	System.out.println("Codigo intermedio: " + lf.getIntermediateCode());
 
 	RESULT = lf;
 :};  
