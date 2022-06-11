@@ -208,25 +208,78 @@ program ::=
    :}
   axiom:ax
   {: 
+	
+	// Codigo final
 
-		try{
-			System.out.println("Codigo intermedio Axioma: " + ax.getIntermediateCode());
-		}catch(Exception e){
-			System.out.println("Codigo intermedio Axioma: NULL POINTER EXCEPTION");
+	// Asignacion de posiciones de memoria para las variables globales y los temporales
+	List<ScopeIF> scopes = scopeManager.getAllScopes();
+	for(ScopeIF scope: scopes){ // para cada ambito
+		int direccionEstatica = 65535;
+
+		// Para simbolos
+		List<SymbolIF> simbolos = scope.getSymbolTable().getSymbols(); //traemos la lista de simbolos
+		for(SymbolIF simbolo: simbolos){ // para cada simbolo
+			if(simbolo instanceof SymbolVariable){ // comprobamos si es una variable
+				//Guardamos la direccion de la variable en SymbolVariable
+				((SymbolVariable)simbolo).setAddress(direccionEstatica);
+				//Actualizamos el valor de direccionEstatica para el proximo simbolo
+				direccionEstatica = direccionEstatica - simbolo.getType().getSize();
+			}
 		}
 
+		// Para temporales
+		List<TemporalIF> temporales = scope.getTemporalTable().getTemporals(); //traemos la lista de los temporales
+		for(TemporalIF t: temporales){ // para cada temporal
+			if (t instanceof Temporal){ // comprobamos si es un temporal
+				//Guardamos la direccion del temporal en Temporal
+				((Temporal)t).setAddress(direccionEstatica);
+				//Actualizamos el valro de direccionEstatica pra el proximo temporal
+				direccionEstatica = direccionEstatica - ((Temporal)t).getSize();
+			}
+		}
+	} // Fin de la asignacion de posiciones de memoria para las variables globales y los temporales
 
-  		// No modificar esta estructura, aunque se pueden añadir más acciones semánticas
-  		List intermediateCode = ax.getIntermediateCode();
-		finalCodeFactory.setEnvironment(CompilerContext.getExecutionEnvironment());
-  		finalCodeFactory.create (intermediateCode);
+	// Generacion de codigo intermedio para iniciar el programa principal e inicializar las variables globales
+	for(ScopeIF scope : scopes){ // para cada ambito
+		IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
 
-  		// En caso de no comentarse las dos sentencias anteriores puede generar una excepcion
-  		// en las llamadas a cupTest si el compilador no está completo. Esto es debido a que 
-  		// aún no se tendrá implementada la generación de código intermedio ni final.
-  		// Para la entrega final deberán descomentarse y usarse.
-  		
-  		syntaxErrorManager.syntaxInfo ("Parsing process ended.");
+		//Solo para el scope de nivel 0
+		if(scope.getLevel() == 0){ 
+			List<SymbolIF> simbolos = scope.getSymbolTable().getSymbols(); //traemos la lista de simbolos
+			for(SymbolIF simbolo: simbolos){ // para cada simbolo
+				if(simbolo instanceof SymbolVariable){ // comprobamos si es una variable
+					int direccion = ((SymbolVariable)simbolo).getAddress();
+					Variable var = new Variable(simbolo.getName(), simbolo.getScope());
+					// Se inicializa las variables del programa principal a 0
+					cb.addQuadruple("VARGLOBAL", var, 0);
+				}
+			}
+		}
+		cb.addQuadruples(ax.getIntermediateCode());
+		ax.setIntermediateCode(cb.create());
+	}
+	
+
+	// Codigo intermedio
+	try{
+		System.out.println("Codigo intermedio Axioma: " + ax.getIntermediateCode());
+	}catch(Exception e){
+		System.out.println("Codigo intermedio Axioma: NULL POINTER EXCEPTION");
+	}
+
+
+
+	// No modificar esta estructura, aunque se pueden añadir más acciones semánticas
+	List intermediateCode = ax.getIntermediateCode();
+	finalCodeFactory.setEnvironment(CompilerContext.getExecutionEnvironment());
+	finalCodeFactory.create (intermediateCode);
+
+	// En caso de no comentarse las dos sentencias anteriores puede generar una excepcion
+	// en las llamadas a cupTest si el compilador no está completo. Esto es debido a que 
+	// aún no se tendrá implementada la generación de código intermedio ni final.
+	// Para la entrega final deberán descomentarse y usarse.
+	
+	syntaxErrorManager.syntaxInfo ("Parsing process ended.");
    :};
 
 axiom ::= defprincipal:def {:
@@ -235,6 +288,7 @@ axiom ::= defprincipal:def {:
 	cb.addQuadruples(def.getIntermediateCode());
 	//Aniadimos las cuadruplas de la lista
 	if(scopeManager.getCurrentScope().getLevel() == 0){
+		cb.addQuadruple("HALT");
 		for(int i = 0; i < listaCadenas.size(); i++){
 			cb.addQuadruple(listaCadenas.get(i));
 		}
@@ -765,8 +819,19 @@ expresion ::=  expresion:e1 MENORQUE  expresion:e2 {:
 	TemporalIF temp = tf.create();
 	SymbolIF simbolo = scopeManager.searchSymbol(id.getLexema().toUpperCase());
 	if(simbolo instanceof SymbolConstant){
-		Value valor = new Value(((SymbolConstant)simbolo).getNum_value());
-		cb.addQuadruple("MV", temp, valor);
+		if(((SymbolConstant)simbolo).getEsBooleano()){ // es booleano
+			if(((SymbolConstant)simbolo).isBool_value()){ // si es true ponemos 1
+				Value valor = new Value(1);
+				cb.addQuadruple("MV", temp, valor);
+			}else{ // si es false ponemos 0
+				Value valor = new Value(0);
+				cb.addQuadruple("MV", temp, valor);
+			}
+		} else { // es numero
+			Value valor = new Value(((SymbolConstant)simbolo).getNum_value()); //hemen y si es booleano?
+			cb.addQuadruple("MV", temp, valor);
+		}
+		
 	} else if (simbolo instanceof SymbolVariable){
 		Variable var = new Variable(id.getLexema().toUpperCase(), scopeManager.getCurrentScope()); //TODO no deberia de ser expr.getId())).getScope()
 		cb.addQuadruple("MVP", temp, var);
