@@ -11,9 +11,9 @@ import es.uned.lsi.compiler.semantic.type.TypeIF;
 // TODO: Student work
 //       Include properties to characterize variables
 
-public class SymbolVariable
-    extends SymbolBase
-{  
+public class SymbolVariable extends SymbolBase {  
+	
+	private int direccion;
    
     /**
      * Constructor for SymbolVariable.
@@ -23,5 +23,15 @@ public class SymbolVariable
      */
     public SymbolVariable (ScopeIF scope, String name, TypeIF type) {
         super (scope, name, type);
-    } 
+    }
+
+	public int getAddress() {
+		return direccion;
+	}
+
+	public void setAddress(int direccion) {
+		this.direccion = direccion;
+	} 
+    
+    
 }

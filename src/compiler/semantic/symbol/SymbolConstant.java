@@ -12,6 +12,7 @@ public class SymbolConstant extends SymbolBase {
 	
 	private int num_value;
 	private boolean bool_value;
+	private boolean esBooleano;
     
     /**
      * Constructor for SymbolConstant.
@@ -21,18 +22,21 @@ public class SymbolConstant extends SymbolBase {
      */
     public SymbolConstant (ScopeIF scope, String name, TypeIF type) {
         super (scope, name, type);
+        esBooleano = false;
     } 
     
-    /*Constructor para enteros*/
+    /*Constructor para booleanos*/
     public SymbolConstant (ScopeIF scope, String name, boolean bool_value, TypeIF type) {
     	super (scope, name, type);
     	this.bool_value = bool_value;
+    	esBooleano = true;
     }
     
-    /*Constructor para booleanos*/
+    /*Constructor para enteros*/
     public SymbolConstant (ScopeIF scope, String name, int num_value, TypeIF type) {
     	super (scope, name, type);
     	this.num_value = num_value;
+    	esBooleano = false;
     }
 
     /*Getter para el valor numerico*/
@@ -45,7 +49,10 @@ public class SymbolConstant extends SymbolBase {
 		return bool_value;
 	}
     
-    
+    /*Getter para esbolleano*/
+	public boolean getEsBooleano() {
+		return esBooleano;
+	}
     
     
 }

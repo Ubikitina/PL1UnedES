@@ -107,6 +107,11 @@ public class Temporal
         return ((scope == null) ? (aTemporal.scope == null) : (aTemporal.scope.equals (scope))) && 
                ((name  == null) ? (aTemporal.name  == null) : (aTemporal.name.equals (name)));
     }
+    
+    public int getSize() {
+    	return 1;
+    }
+    
 
     /**
      * Returns a hash code for the object.
