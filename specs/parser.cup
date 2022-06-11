@@ -174,11 +174,11 @@ non terminal Sentencia sentencia;
 non terminal Sentencia sentenciaFuncion;
 non terminal Sentencia listaSentencias;
 non terminal ListaSentenciasFuncion listaSentenciasFuncion;
-non terminal sentenciaif;
+non terminal Sentencia sentenciaif;
 non terminal Sentencia sentenciaifFuncion;
-non terminal rellenoif;
+non terminal Sentencia rellenoif;
 non terminal ListaSentenciasFuncion rellenoifFuncion;
-non terminal sentenciafor;
+non terminal Sentencia sentenciafor;
 non terminal Sentencia sentenciaforFuncion;
 non terminal SentenciaDevolver sentenciaDevolver;
 
@@ -1111,7 +1111,6 @@ sentenciadeasignacion ::= parteizquierdaasignacion:pizq ASIGNACION:as parametroa
 
 	// Codigo intermedio
 	Sentencia s = new Sentencia();
-	//TemporalFactory tf = new TemporalFactory(scopeManager.getCurrentScope());
 	IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scopeManager.getCurrentScope());
 	
 
@@ -1248,13 +1247,9 @@ sentenciallamadafuncion ::= llamadafuncion:lf DSENTENCIAS:d {:
 
 sentencia ::= sentenciadeasignacion:s {:
 	RESULT = s;
-:} | sentenciaif {:
-	Sentencia s = new Sentencia();
-	s.setIntermediateCode(new ArrayList());
+:} | sentenciaif:s {:
 	RESULT = s;
-:} | sentenciafor {:
-	Sentencia s = new Sentencia();
-	s.setIntermediateCode(new ArrayList());
+:} | sentenciafor:s {:
 	RESULT = s;
 :} | sentenciaEscribir:s {:
 	RESULT = s;
@@ -1311,10 +1306,30 @@ listaSentenciasFuncion ::= sentenciaFuncion:sent listaSentenciasFuncion:listaSen
  *======================IF========================*
  *================================================*/
 
-sentenciaif ::= COMIENZOSI:c expresion:ex  STARTIF DELIMFUNC listaSentencias rellenoif {:
+sentenciaif ::= COMIENZOSI:c expresion:ex  STARTIF DELIMFUNC listaSentencias:ls rellenoif:ri {:
 	if(!ex.getTipo().getName().equals("BOOLEANO")){
 		semanticErrorManager.semanticFatalError("La expresion que determina la condicion en la sentencia if de la linea "+ c.getLine() + " no se trata de una expresion logica.");
 	}
+
+	// Codigo intermedio
+	LabelFactory lf = new LabelFactory();
+	LabelIF etiquetaFinSi = lf.create(); //etiqueta para el final de las sentencias if-else
+	LabelIF etiquetaSino = lf.create(); //etiqueta para el comienzo de la parte else
+	TemporalIF expTemp = ex.getTemporal(); //temporal de la expresion
+	IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scopeManager.getCurrentScope());
+	cb.addQuadruples(ex.getIntermediateCode()); //añadimos las cuadruplas de la expresion
+	cb.addQuadruple("BRF", expTemp, etiquetaSino); //si no se cumple saltamos a la etiqueta SI
+	cb.addQuadruples(ls.getIntermediateCode()); //añadimos las cuadruplas del SI
+	cb.addQuadruple("BR", etiquetaFinSi); //saltamos al final del SI-SINO
+	cb.addQuadruple("INL", etiquetaSino); //emplazamos la etiqueta
+	cb.addQuadruples(ri.getIntermediateCode()); //añadimos las cuadruplas del rellenoif
+	cb.addQuadruple("INL", etiquetaFinSi); //emplazamos la etiqueta
+
+	Sentencia sent = new Sentencia();
+	sent.setIntermediateCode(cb.create());
+	System.out.println("Codigo intermedio: " + sent.getIntermediateCode());
+	RESULT = sent;
+	
 :} FINBLOQUESENTENCIAS COMIENZOSI DSENTENCIAS ;
 
 sentenciaifFuncion ::= COMIENZOSI:c expresion:ex  STARTIF DELIMFUNC listaSentenciasFuncion:listaSent rellenoifFuncion:listaRelleno {:
@@ -1338,13 +1353,17 @@ rellenoifFuncion ::=  ALTERNATIVASI DELIMFUNC  listaSentenciasFuncion:ls {:
 	RESULT = new ListaSentenciasFuncion();
 :} ;
 
-rellenoif ::=  ALTERNATIVASI DELIMFUNC  listaSentencias | epsilon ;
+rellenoif ::=  ALTERNATIVASI DELIMFUNC  listaSentencias:ls {:
+	RESULT = ls; 
+:} | epsilon {:
+	RESULT = new Sentencia(); 
+:} ;
 
 /*================================================*
  *======================FOR=======================*
  *================================================*/
 
-sentenciafor ::= COMIENZOBUCLEPARA IDEN:id RANGOBUCLEPARA expresion:e1 RANGO expresion:e2 DELIMFUNC listaSentencias {:
+sentenciafor ::= COMIENZOBUCLEPARA IDEN:id RANGOBUCLEPARA expresion:e1 RANGO expresion:e2 DELIMFUNC listaSentencias:ls {:
 	// Comprobamos que la variable indice esta declarada en las tablas de simbolos abiertos
 	if(!scopeManager.containsSymbol(id.getLexema().toUpperCase())){
 		semanticErrorManager.semanticFatalError("Variable del bucle para " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " no esta declarado anteriormente, error.");
@@ -1359,6 +1378,30 @@ sentenciafor ::= COMIENZOBUCLEPARA IDEN:id RANGOBUCLEPARA expresion:e1 RANGO exp
 	if(!(e1.getTipo().equals(scopeManager.searchType("ENTERO")) && e2.getTipo().equals(scopeManager.searchType("ENTERO")))){
 		semanticErrorManager.semanticFatalError("El tipo de alguna de las expresiones del rango del bucle para en linea " + id.getLine() + " no es de tipo entero, error.");
 	}
+
+	//Codigo intermedio
+	LabelFactory lf = new LabelFactory();
+	LabelIF etiquetaComienzoPara = lf.create(); //etiqueta para el comienzo del bucle para
+	LabelIF etiquetaFinPara = lf.create(); //etiqueta para el final del bucle para
+	IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scopeManager.getCurrentScope());
+	TemporalFactory tF = new TemporalFactory(scopeManager.getCurrentScope());
+	TemporalIF e1Temp = e1.getTemporal(); //temporal del indice
+	TemporalIF e2Temp = e2.getTemporal(); //temporal del limite superior
+	TemporalIF condicionTemp = tF.create(); //temporal de la condicion
+	cb.addQuadruples(e1.getIntermediateCode()); //añadimos las cuadruplas de e1
+	cb.addQuadruples(e2.getIntermediateCode()); //añadimos las cuadruplas de e2
+	cb.addQuadruple("INL", etiquetaComienzoPara); //añadimos la etiqueta comienzo
+	cb.addQuadruple("GR", condicionTemp, e1Temp, e2Temp); // indice > limite superior
+	cb.addQuadruple("BRT", condicionTemp, etiquetaFinPara); // si indice > limite superior, vamos al final del bucle
+	cb.addQuadruples(ls.getIntermediateCode()); //añadimos las cuadruplas del cuerpo del bucle para
+	cb.addQuadruple("INC", e1Temp, e1Temp); //incrementamos el indice
+	cb.addQuadruple("BR", etiquetaComienzoPara); //saltamos al inicio del bucle
+	cb.addQuadruple("INL", etiquetaFinPara); //añado etiqueta fin
+
+	Sentencia sent = new Sentencia();
+	sent.setIntermediateCode(cb.create());
+	System.out.println("Codigo intermedio: " + sent.getIntermediateCode());
+	RESULT = sent;
 :}FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
 
 sentenciaforFuncion ::= COMIENZOBUCLEPARA IDEN:id RANGOBUCLEPARA expresion:e1 RANGO expresion:e2 DELIMFUNC listaSentenciasFuncion {:
