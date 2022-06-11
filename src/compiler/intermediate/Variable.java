@@ -1,7 +1,11 @@
 package compiler.intermediate;
 
+import java.util.List;
+
+import compiler.semantic.symbol.SymbolVariable;
 import es.uned.lsi.compiler.intermediate.VariableIF;
 import es.uned.lsi.compiler.semantic.ScopeIF;
+import es.uned.lsi.compiler.semantic.symbol.SymbolIF;
 
 /**
  * Class for variables in intermediate code.
@@ -53,7 +57,16 @@ public class Variable
     public final int getAddress ()
     {
         // TODO : Student Work
-        return 0;
+    	int address = 0;
+    	
+    	// En Variable no tenemos la direccion de memoria, por lo que hay que ir a SymbolVariable a recuperar este dato
+    	List<SymbolIF> simbolos = scope.getSymbolTable().getSymbols(); // traemos la lista de simbolos
+    	for(SymbolIF simbolo: simbolos){
+    		if(simbolo instanceof SymbolVariable && simbolo.getName().equals(this.name)) {
+    			address = ((SymbolVariable)simbolo).getAddress(); // recuperamos el dato desde SymbolVariable
+    		}
+    	}
+        return address;
     }
 
     /**
