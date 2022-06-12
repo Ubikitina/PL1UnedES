@@ -490,8 +490,13 @@ valorango ::= NUM:valor_num {:
 	Valorango vr = new Valorango(m.getId(), false, true);
 
 	// Codigo intermedio
-	vr.setTemporal(m.getTemporal());
-	vr.setIntermediateCode(m.getIntermediateCode());
+	TemporalFactory tf = new TemporalFactory(scopeManager.getCurrentScope());
+	TemporalIF temp = tf.create();
+	IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scopeManager.getCurrentScope());
+	cb.addQuadruples(m.getIntermediateCode());
+	cb.addQuadruple("STPINVERT", temp, m.getTemporal());
+	vr.setTemporal(temp);
+	vr.setIntermediateCode(cb.create());
 
 	RESULT = vr;
 :};
