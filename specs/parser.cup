@@ -36,24 +36,7 @@ action code {:
 	List<QuadrupleIF> listaCadenas = new ArrayList<QuadrupleIF>();
 
 	// Metodos creados por mi
-	// Metodo para comprobar si existe un simbolo 
-	public void errorSiExisteSimbolo(String id, int linea){ 
-		// Recuperamos el ambito y obtenemos la tabla de simbolos
-		ScopeIF scope = scopeManager.getCurrentScope();
-		SymbolTableIF tablaSimbolos = scope.getSymbolTable();
-
-		// Comprobamos si la tabla de simbolos contiene el simbolo
-		if(tablaSimbolos.containsSymbol(id)){
-			semanticErrorManager.semanticFatalError("Simbolo " + id + " en la linea " + linea + " declarado anteriormente, error.");
-		}
-	}
-
-	// Metodo para comprobar si existe un tipo
-	public void errorSiExisteTipo(String id, int linea){ 
-		if(scopeManager.containsType(id)){
-			semanticErrorManager.semanticFatalError("Identificador " + id + " en la linea " + linea + " declarado anteriormente, error.");
-		}
-	}
+	// Aqui se podrian incluir metodos creados por mi. Seria buena idea hacerlo para refactorizar codigo y dejarlo mas presentable.
 	
 :}	
 
@@ -306,7 +289,7 @@ axiom ::= defprincipal:def {:
 epsilon ::=;
 
 /*================================================*
- *================CONSTANTES======================*
+ *=============== CONSTANTES =====================*
  *================================================*/
 
 //Definición de constantes
@@ -320,7 +303,9 @@ defconstantes ::=   IDEN:id ASIGNACION valorconstante:valor DSENTENCIAS {:
 		semanticErrorManager.semanticFatalError("Constante " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " declarada anteriormente, error.");
 	}
 	// Comprobamos si la tabla de tipos contiene el identificador.
-	errorSiExisteTipo(id.getLexema().toUpperCase(), id.getLine());
+	if(scopeManager.containsType(id.getLexema().toUpperCase())){
+		semanticErrorManager.semanticFatalError("Identificador " + id.getLexema().toUpperCase() + " en la linea " + id.getLine() + " declarado anteriormente, error.");
+	}
 
 	semanticErrorManager.semanticDebug("Constante " + id.getLexema().toUpperCase() + " en linea " + id.getLine() + " no declarada.");
 
@@ -351,7 +336,7 @@ seccionconstantes ::= BCONSTANTES defconstantes | epsilon;
 
 
 /*================================================*
- *==========DEFINICION DE TIPOS===================*
+ *========= DEFINICION DE TIPOS ==================*
  *================================================*/
 
  //Definición de tipos
@@ -504,7 +489,7 @@ valorango ::= NUM:valor_num {:
 secciontipos ::= COMIENZODECLTIPOS deftipos | epsilon; 
 
 /*================================================*
- *==========DEFINICION DE VARIABLES===============*
+ *========= DEFINICION DE VARIABLES ==============*
  *================================================*/
 
 // Definición de variables
@@ -572,8 +557,15 @@ seccionvariables ::= DECLVARIABLES:dc defvariables:listVariables {:
 			semanticErrorManager.semanticFatalError("Se ha detectado una notacion de declaracion de variable no autorizada. Asegurar que todas las variables sean declaradas con identificadores.");
 		}else{ // Si no es null, es un IDEN
 			if(variable.isPorValor()){ //comprobamos que es por valor				
-				errorSiExisteSimbolo(variable.getId(), dc.getLine()); // Error si existe en la tabla de simbolos
-				errorSiExisteTipo(variable.getId(), dc.getLine()); // Error si existe en la tabla de tipos
+				// Error si existe en la tabla de simbolos
+				if(scopeManager.getCurrentScope().getSymbolTable().containsSymbol(variable.getId())){
+					semanticErrorManager.semanticFatalError("Simbolo " + variable.getId() + " en la linea " + dc.getLine() + " declarado anteriormente, error.");
+				}
+				// Error si existe en la tabla de tipos
+				if(scopeManager.containsType(variable.getId())){
+					semanticErrorManager.semanticFatalError("Identificador " + variable.getId() + " en la linea " + dc.getLine() + " declarado anteriormente, error.");
+				}
+
 				SymbolVariable symbol = new SymbolVariable(scope, variable.getId(), variable.getTipo());
 				symbolTable.addSymbol(symbol);
 			}else{ // si no es por valor, lanzamos error
@@ -588,7 +580,7 @@ puntoycomaopcional ::= DSENTENCIAS | epsilon;
 
 
 /*================================================*
- *================SUBPROGRAMAS====================*
+ *=============== SUBPROGRAMAS ===================*
  *================================================*/
 
 //reglas de subprogramas
@@ -602,9 +594,13 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id PIZQUIERDO defvariables:listaVar
 	SymbolTableIF symbolTable = scope.getSymbolTable();
 	TypeTableIF typeTable = scope.getTypeTable();
 
-	// Invocamos los metodos que lanzan un error si el id esta anteriormente declarado bien en la tabla de simbolos o bien en la tabla de tipos
-	errorSiExisteSimbolo(id.getLexema().toUpperCase(), id.getLine());
-	errorSiExisteTipo(id.getLexema().toUpperCase(), id.getLine());
+	// Comprobamos si el id esta anteriormente declarado bien en la tabla de simbolos o bien en la tabla de tipos
+	if(scopeManager.getCurrentScope().getSymbolTable().containsSymbol(id.getLexema().toUpperCase())){
+		semanticErrorManager.semanticFatalError("Simbolo " + id.getLexema().toUpperCase() + " en la linea " + id.getLine() + " declarado anteriormente, error.");
+	}
+	if(scopeManager.containsType(id.getLexema().toUpperCase())){
+		semanticErrorManager.semanticFatalError("Identificador " + id.getLexema().toUpperCase() + " en la linea " + id.getLine() + " declarado anteriormente, error.");
+	}
 	
 	// Creamos el tipo y el simbolo del procedimiento
 	TypeProcedure tp = new TypeProcedure(scope, id.getLexema().toUpperCase());
@@ -629,9 +625,11 @@ procedimiento ::= COMIENZOPROCEDIMIENTO IDEN:id PIZQUIERDO defvariables:listaVar
 		ArrayList<Selectorvalororeferencia> listaAux = listaVar.getListaVariablesConTipo();
 
 		// Recorremos la lista e introducimos las variables en la tabla de simbolos
-		for(int x = 0; x < listaAux.size(); x++){
-			Selectorvalororeferencia variable = listaAux.get(x);
-			errorSiExisteSimbolo(variable.getId(), id.getLine()); //TODO aqui tambien deberia de incluir un errorSiExisteTipo? revisar (y en funcion tambien)
+		for(Selectorvalororeferencia variable : listaAux){
+			// Error si existe simbolo
+			if(scopeManager.getCurrentScope().getSymbolTable().containsSymbol(variable.getId())){ //TODO aqui tambien deberia de incluir un error si existe tipo? revisar (y en funcion tambien)
+				semanticErrorManager.semanticFatalError("Simbolo " + variable.getId() + " en la linea " + id.getLine() + " declarado anteriormente, error.");
+			}
 
 			// Comprobacion de que no se pasa por valor ningun vector completo, esta prohibido
 			if(variable.isPorValor() && variable.getTipo() instanceof TypeArray){
@@ -655,9 +653,13 @@ funcion ::= DECLAREFUNCION IDEN:id PIZQUIERDO defvariables:listaVar PDERECHO DEL
 	SymbolTableIF symbolTable = scope.getSymbolTable();
 	TypeTableIF typeTable = scope.getTypeTable();
 
-	// Invocamos los metodos que lanzan un error si el id esta anteriormente declarado bien en la tabla de simbolos o bien en la tabla de tipos
-	errorSiExisteSimbolo(id.getLexema().toUpperCase(), id.getLine());
-	errorSiExisteTipo(id.getLexema().toUpperCase(), id.getLine());
+	// Lanzamos un error si el id esta anteriormente declarado bien en la tabla de simbolos o bien en la tabla de tipos
+	if(scopeManager.getCurrentScope().getSymbolTable().containsSymbol(id.getLexema().toUpperCase())){
+		semanticErrorManager.semanticFatalError("Simbolo " + id.getLexema().toUpperCase() + " en la linea " + id.getLine() + " declarado anteriormente, error.");
+	}
+	if(scopeManager.containsType(id.getLexema().toUpperCase())){
+		semanticErrorManager.semanticFatalError("Identificador " + id.getLexema().toUpperCase() + " en la linea " + id.getLine() + " declarado anteriormente, error.");
+	}
 	
 	// Creamos el tipo y el simbolo de la funcion
 	TypeFunction tf = new TypeFunction(scope, id.getLexema().toUpperCase(), tipo.getNombre_tipo(), listaVar.getListaVariablesConTipo());
@@ -680,10 +682,11 @@ funcion ::= DECLAREFUNCION IDEN:id PIZQUIERDO defvariables:listaVar PDERECHO DEL
 		ArrayList<Selectorvalororeferencia> listaAux = listaVar.getListaVariablesConTipo();
 
 		// Recorremos la lista e introducimos las variables en la tabla de simbolos
-		for(int x = 0; x < listaAux.size(); x++){
-			Selectorvalororeferencia variable = listaAux.get(x);
+		for(Selectorvalororeferencia variable : listaAux){
 			// Comprobamos si la tabla de simbolos contiene el simbolo
-			errorSiExisteSimbolo(variable.getId(), id.getLine());
+			if(scopeManager.getCurrentScope().getSymbolTable().containsSymbol(variable.getId())){
+				semanticErrorManager.semanticFatalError("Simbolo " + variable.getId() + " en la linea " + id.getLine() + " declarado anteriormente, error.");
+			}
 
 			// Comprobacion de que no se pasa por valor ningun vector completo, esta prohibido
 			if(variable.isPorValor() && variable.getTipo() instanceof TypeArray){
@@ -717,7 +720,7 @@ defsubprograma ::=selectorpof  defsubprograma | epsilon ;
 seccionsubprograma ::=COMIENZOSUBPROGRAMAS  defsubprograma  | epsilon ;
 
 /*================================================*
- *==============PROGRAMA PRINCIPAL================*
+ *============= PROGRAMA PRINCIPAL ===============*
  *================================================*/
 
 // Definición de programa principal
@@ -730,22 +733,18 @@ defprincipal ::= COMIENZOPROGRAMA IDEN:id {:
 	semanticErrorManager.semanticDebug("El nombre del nuevo ambito es: " + scope.getName());
 	semanticErrorManager.semanticDebug("El nivel del nuevo ambito es: " + scope.getLevel()); // El nivel esperado es 0
 	
-	// Obtencion de la tabla de tipos y simbolos
-	SymbolTableIF symbolTable = scope.getSymbolTable(); //BORRAR No estoy segura para que lo recupero si no se usa
-	TypeTableIF typeTable = scope.getTypeTable();
-	
 	// Introducimos los tipos entero y booleano que describe el enunciado
 	TypeSimple tsEntero = new TypeSimple(scope, "ENTERO");
-	typeTable.addType("ENTERO",tsEntero);
+	scope.getTypeTable().addType("ENTERO",tsEntero);
 	TypeSimple tsBooleano = new TypeSimple(scope, "BOOLEANO");
-	typeTable.addType("BOOLEANO",tsBooleano);
+	scope.getTypeTable().addType("BOOLEANO",tsBooleano);
 	
 :} DELIMFUNC seccionconstantes secciontipos seccionvariables seccionsubprograma COMIENZO listaSentencias:listaS FINBLOQUESENTENCIAS FINPROGRAMA {:
 	RESULT = listaS;
 :};
 
 /*================================================*
- *==================EXPRESIONES===================*
+ *================= EXPRESIONES ==================*
  *================================================*/
 
 // Expresiones
@@ -1063,7 +1062,7 @@ expresionlvl5 ::= PIZQUIERDO expresion:expr PDERECHO {:
 :} ;
 
 /*================================================*
- *================ACCESO A VECTORES===============*
+ *=============== ACCESO A VECTORES ==============*
  *================================================*/
 
 // Acceso a vectores
@@ -1139,11 +1138,11 @@ miembrovector ::= IDEN:id CIZQUIERDO valorango:vr CDERECHO {:
 :};
 
 /*================================================*
- *============SENTENCIAS DE ASIGNACION============*
+ *=========== SENTENCIAS DE ASIGNACION ===========*
  *================================================*/
  
 parteizquierdaasignacion ::= IDEN:id {:
-	// Comprobamos si el identificador esta previametne incluido en la tabla de simbolos
+	// Comprobamos si el identificador esta previamente incluido en la tabla de simbolos
 	if(!scopeManager.containsSymbol(id.getLexema().toUpperCase())){
 		semanticErrorManager.semanticFatalError("El simbolo "+ id.getLexema().toUpperCase()+ " no esta contenido en la tabla de simbolos."); 
 	} 
@@ -1218,7 +1217,7 @@ parametroasignacion ::= expresion:e {:
 :} ;
 
 /*================================================*
- *===============LLAMADA A FUNCION================*
+ *============== LLAMADA A FUNCION ===============*
  *================================================*/
  // Nota - Esta seccion, pese a llamarse llamada a funcion, tambien sirve para realizar las llamadas a los procedimientos.
 
@@ -1304,7 +1303,7 @@ sentenciallamadafuncion ::= llamadafuncion:lf DSENTENCIAS:d {:
 :};
 
 /*================================================*
- *===================SENTENCIAS===================*
+ *================== SENTENCIAS ==================*
  *================================================*/
 
 sentencia ::= sentenciadeasignacion:s {:
@@ -1365,7 +1364,7 @@ listaSentenciasFuncion ::= sentenciaFuncion:sent listaSentenciasFuncion:listaSen
 :};
 
 /*================================================*
- *======================IF========================*
+ *===================== IF =======================*
  *================================================*/
 
 sentenciaif ::= COMIENZOSI:c expresion:ex  STARTIF DELIMFUNC listaSentencias:ls rellenoif:ri {:
@@ -1422,7 +1421,7 @@ rellenoif ::=  ALTERNATIVASI DELIMFUNC  listaSentencias:ls {:
 :} ;
 
 /*================================================*
- *======================FOR=======================*
+ *===================== FOR ======================*
  *================================================*/
 
 sentenciafor ::= COMIENZOBUCLEPARA IDEN:id RANGOBUCLEPARA expresion:e1 RANGO expresion:e2 DELIMFUNC listaSentencias:ls {:
@@ -1491,7 +1490,7 @@ sentenciaforFuncion ::= COMIENZOBUCLEPARA IDEN:id RANGOBUCLEPARA expresion:e1 RA
 :}FINBLOQUESENTENCIAS COMIENZOBUCLEPARA DSENTENCIAS;
 
 /*================================================*
- *===================ESCRIBIR=====================*
+ *================== ESCRIBIR ====================*
  *================================================*/
 
 parametroEscribir ::= STRING:s {:
@@ -1553,7 +1552,7 @@ sentenciaEscribir ::= ESCRIBIR PIZQUIERDO parametroEscribir:p PDERECHO DSENTENCI
 :};
 
 /*================================================*
- *===================DEVOLVER=====================*
+ *================== DEVOLVER ====================*
  *================================================*/
 
 sentenciaDevolver ::= FRETURN:r expresion:expr DSENTENCIAS {:
