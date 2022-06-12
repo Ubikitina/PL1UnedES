@@ -1,0 +1,34 @@
+;Quadruple - [VARGLOBAL SUMA, 0, null]
+MOVE #0, /65535
+;Quadruple - [VARGLOBAL C, 0, null]
+MOVE #0, /65534
+;Quadruple - [VARGLOBAL D, 0, null]
+MOVE #0, /65533
+;Quadruple - [MVA T_5, C, null]
+MOVE #65534, /65527
+;Quadruple - [MV T_6, 5, null]
+MOVE #5, /65526
+;Quadruple - [STP T_5, T_6, null]
+MOVE /65527, .R1
+MOVE /65526, [.R1]
+;Quadruple - [MVA T_7, D, null]
+MOVE #65533, /65525
+;Quadruple - [MV T_8, 18, null]
+MOVE #18, /65524
+;Quadruple - [STP T_7, T_8, null]
+MOVE /65525, .R1
+MOVE /65524, [.R1]
+;Quadruple - [MVA T_9, SUMA, null]
+MOVE #65535, /65523
+;Quadruple - [MV T_12, 1, null]
+MOVE #1, /65520
+;Quadruple - [STP T_9, T_12, null]
+MOVE /65523, .R1
+MOVE /65520, [.R1]
+;Quadruple - [MVP T_13, SUMA, null]
+MOVE /65535, /65519
+;Quadruple - [ESCRIBENT T_13, null, null]
+WRINT /65519
+WRCHAR #10
+;Quadruple - [HALT null, null, null]
+HALT

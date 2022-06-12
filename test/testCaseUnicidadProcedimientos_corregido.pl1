@@ -1,0 +1,22 @@
+# programa con procedimiento
+programa UProcedimientos:
+
+	variables 
+		c, d,suma: entero;
+	subprogramas
+		procedimiento doble(m : entero):
+			variables 
+				c: entero;
+			comienzo
+			c = m + m;	
+            escribir(m);			
+	    fin;
+		
+        
+		
+comienzo
+	
+	escribir("imprime doble 8");
+	doble(8);
+
+fin.

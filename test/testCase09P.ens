@@ -1,0 +1,13 @@
+;Quadruple - [VARGLOBAL SUMA, 0, null]
+MOVE #0, /65535
+;Quadruple - [VARGLOBAL C, 0, null]
+MOVE #0, /65534
+;Quadruple - [VARGLOBAL D, 0, null]
+MOVE #0, /65533
+;Quadruple - [ESCRIBCA T_4, L_0, null]
+WRSTR /L_0
+WRCHAR #10
+;Quadruple - [HALT null, null, null]
+HALT
+;Quadruple - [CADENA "IMPRIME DOBLE 8", L_0, null]
+L_0: DATA "IMPRIME DOBLE 8"

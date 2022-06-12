@@ -1,0 +1,14 @@
+;Quadruple - [ESCRIBCA T_0, L_0, null]
+WRSTR /L_0
+WRCHAR #10
+;Quadruple - [ESCRIBLN null, null, null]
+WRCHAR #10
+;Quadruple - [ESCRIBCA T_1, L_1, null]
+WRSTR /L_1
+WRCHAR #10
+;Quadruple - [HALT null, null, null]
+HALT
+;Quadruple - [CADENA "HOLA", L_0, null]
+L_0: DATA "HOLA"
+;Quadruple - [CADENA "MUNDO", L_1, null]
+L_1: DATA "MUNDO"
