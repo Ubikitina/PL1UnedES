@@ -475,11 +475,10 @@ valorango ::= NUM:valor_num {:
 	Valorango vr = new Valorango(m.getId(), false, true);
 
 	// Codigo intermedio
-	TemporalFactory tf = new TemporalFactory(scopeManager.getCurrentScope());
-	TemporalIF temp = tf.create();
+	TemporalIF temp = m.getTemporal();
 	IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scopeManager.getCurrentScope());
 	cb.addQuadruples(m.getIntermediateCode());
-	cb.addQuadruple("STPINVERT", temp, m.getTemporal());
+	cb.addQuadruple("STPINVERT", temp);
 	vr.setTemporal(temp);
 	vr.setIntermediateCode(cb.create());
 
@@ -895,12 +894,11 @@ expresion ::=  expresion:e1 MENORQUE  expresion:e2 {:
 
 	// Codigo intermedio
 	TemporalFactory tf = new TemporalFactory(scopeManager.getCurrentScope());
-	TemporalIF temp = tf.create();
 	TemporalIF tempAnterior = mv.getTemporal();
 	IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scopeManager.getCurrentScope());
 	cb.addQuadruples(mv.getIntermediateCode());
-	cb.addQuadruple("STPINVERT", temp, tempAnterior);
-	expr.setTemporal(temp);
+	cb.addQuadruple("STPINVERT", tempAnterior);
+	expr.setTemporal(tempAnterior);
 	expr.setIntermediateCode(cb.create());
 
 	RESULT = expr;
@@ -1120,15 +1118,15 @@ miembrovector ::= IDEN:id CIZQUIERDO valorango:vr CDERECHO {:
 	TemporalIF temp = tf.create();
 	TemporalIF temp1 = tf.create(); // Direccion base
 	TemporalIF temp2 = tf.create();
-	TemporalIF tempPosicion = vr.getTemporal(); // Se trata del desplazamiento que usaremos para cambiar de posicion y acceder diferentes campos del vector
-	TemporalIF desplaz = tf.create();
+	TemporalIF tempPosicion = vr.getTemporal(); 
+	TemporalIF desplaz = tf.create(); // Se trata del desplazamiento que usaremos para cambiar de posicion y acceder diferentes campos del vector
 	SymbolIF simboloVector = scopeManager.searchSymbol(id.getLexema().toUpperCase()); // Obtenemos el simbolo del vector
 	TypeIF tVec = scopeManager.searchType(simboloVector.getType().getName());
 	int rangoInferiorVector = ((TypeArray)tVec).getRangoInferior(); // Obtenemos el rango inferior del vector
 	Variable var = new Variable(id.getLexema().toUpperCase(), simboloVector.getScope()); //Creamos una variable para el simbolo del vector
 	cb.addQuadruple("MVA", temp1, var); // Se trata de la direccion base de la variable, donde esta el registro de la primera posicion
-	cb.addQuadruple("SUB", desplaz, tempPosicion, rangoInferiorVector); //Correccion para cuando los rangos de los vectores no empiezan en 0
-	cb.addQuadruple("SUB", temp2, temp1, desplaz); //Restamos el desplazamiento para acceder a la posicion
+	cb.addQuadruple("SUB", desplaz, tempPosicion, rangoInferiorVector); //Correccion para cuando los rangos de los vectores no empiezan en 0. Restamos a la posicion actual el rango inferior
+	cb.addQuadruple("SUB", temp2, temp1, desplaz); //Restamos el desplazamiento a la direccion base para acceder a la posicion que queremos
 	mv.setTemporal(temp2);
 	mv.setIntermediateCode(cb.create());
 
