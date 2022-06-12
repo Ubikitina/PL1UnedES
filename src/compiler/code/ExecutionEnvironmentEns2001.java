@@ -351,10 +351,9 @@ public class ExecutionEnvironmentEns2001 implements ExecutionEnvironmentIF {
     	
     	if(quadruple.getOperation().equals("STPINVERT")) {
     		StringBuffer b = new StringBuffer(); 
-    		String o1 = operacion(quadruple.getFirstOperand());
     		String r = operacion(quadruple.getResult());
     		b.append(";" + quadruple.toString() + "\n"); // generar cuadrupla como un comentario
-    		b.append("MOVE " + o1  + ", " +  ".R1"  + "\n");
+    		b.append("MOVE " + r  + ", " +  ".R1"  + "\n");
     		b.append("MOVE " + "[.R1]" + ", " + r);
     		return b.toString();
     	}
